@@ -6,8 +6,6 @@ import { NumberFilter } from "./matrix-filters/NumberFilter";
 import { TextOnlyFilter } from "./matrix-filters/TextOnlyFilter";
 import { TaxonFilter } from "./matrix-filters/TaxonFilter";
 
-import { ITaxon } from "./Taxon";
-
 export enum IdentificationEvents {
   done = "done",
   pointsUpdate = "pointsUpdate",

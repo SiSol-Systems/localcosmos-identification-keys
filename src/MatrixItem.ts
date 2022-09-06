@@ -1,4 +1,4 @@
-import { ITaxon } from "./Taxon";
+import { Taxon } from "./Taxon";
 import { MatrixFilterSpaceConstructor } from "./MatrixFilterSpace";
 
 
@@ -13,7 +13,7 @@ export interface MatrixItemDefinition {
   name: string,
   uuid: string,
   space: any,
-  taxon: ITaxon | null,
+  taxon: Taxon | null,
   imageUrl: string | null,
   nodeType: NodeTypes,
   isVisible: boolean,
@@ -26,7 +26,7 @@ export class MatrixItem {
 
   uuid: string
   name: string
-  taxon: ITaxon | null
+  taxon: Taxon | null
   maxPoints: number
 
   isPossible: boolean
