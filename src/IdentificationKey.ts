@@ -1,11 +1,36 @@
+import { MatrixFilterDefinition } from "./MatrixFilter";
+import { DescriptiveTextAndImagesFilter } from "./matrix-filters/DescriptiveTextAndImagesFilter";
+import { ColorFilter } from "./matrix-filters/ColorFilter";
+import { RangeFilter } from "./matrix-filters/RangeFilter";
+import { NumberFilter } from "./matrix-filters/NumberFilter";
+import { TextOnlyFilter } from "./matrix-filters/TextOnlyFilter";
+import { TaxonFilter } from "./matrix-filters/TaxonFilter";
+
+import { ITaxon } from "./Taxon";
+
 export enum IdentificationEvents {
   done = "done",
   pointsUpdate = "pointsUpdate",
   matrixFilterBecameVisible = "matrixFilterBecameVisible",
   matrixFilterBecameInvisible = "matrixFilterBecameInvisible",
-  valueBecameImpossible = "valueBecameImpossible",
-  valueBecamePossible = "valueBecamePossible",
+  spaceBecameImpossible = "spaceBecameImpossible",
+  spaceBecamePossible = "spaceBecamePossible",
 }
+
+type MatrixFilterType = typeof DescriptiveTextAndImagesFilter | typeof ColorFilter | typeof RangeFilter | typeof NumberFilter | typeof TextOnlyFilter | typeof TaxonFilter;
+
+type MatrixFilterTypeMap = {
+  [key: string]: MatrixFilterType;
+};
+
+const MatrixFilterClassMap: MatrixFilterTypeMap = {
+  DescriptiveTextAndImagesFilter: DescriptiveTextAndImagesFilter,
+  ColorFilter: ColorFilter,
+  RangeFilter: RangeFilter,
+  NumberFilter: NumberFilter,
+  TextOnlyFilter: TextOnlyFilter,
+  TaxonFilter: TaxonFilter
+};
 
 interface IdentificationEventCallback {
   (eventType: string): void;
@@ -29,7 +54,7 @@ export interface IdentificationSettings {
 
 export interface IdentificationKeyData {
   items: [],
-  matrixFilters: []
+  matrixFilters: Record<string, MatrixFilterDefinition>
 }
 
 export class IdentificationKey {
@@ -38,10 +63,17 @@ export class IdentificationKey {
 
   constructor(identificationKeyData: IdentificationKeyData, settings: IdentificationSettings) {
     this.identificationKeyData = identificationKeyData;
+
+    this.activateData();
   }
 
-  setData() {
+  activateData() {
+    const matrixFilterDefinitions = this.identificationKeyData["matrixFilters"];
 
+    for (let matrixFilterUuid in matrixFilterDefinitions) {
+      let matrixFilterDefinition = matrixFilterDefinitions[matrixFilterUuid];
+      let MatrixFilterClass = MatrixFilterClassMap[matrixFilterDefinition.type];
+    }
   }
 
   on(event: IdentificationEvents): void {
@@ -57,6 +89,10 @@ export class IdentificationKey {
   }
 
   unSelectValue(): void {
+
+  }
+
+  evaluate(): void {
 
   }
 
