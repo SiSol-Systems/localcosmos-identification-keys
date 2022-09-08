@@ -21,14 +21,22 @@ export interface MatrixFilterDefinition {
   allowMultipleValues: boolean
 }
 
-
 export class MatrixFilter {
 
   uuid: string
 
   definition: MatrixFilterDefinition
 
+  name: string
+  description: string
+
+  isMultispace: boolean
   isVisible: boolean
+  isRestricted: boolean
+
+  weight: number
+  restrictions: any // unknown
+  allowMultipleValues: boolean
 
   matrixFilterSpaceClass: MatrixFilterSpaceConstructor
   matrixFilterSpaces: Record<string, MatrixFilterSpace>
@@ -37,8 +45,17 @@ export class MatrixFilter {
 
   constructor(uuid: string, definition: MatrixFilterDefinition) {
     this.uuid = uuid;
+
+    this.name = '';
+    this.description = '';
+
+    this.isMultispace = false;
     this.isVisible = true;
+    this.isRestricted = false;
     this.definition = definition;
+
+    this.weight = 1;
+    this.allowMultipleValues = false;
 
     this.matrixFilterSpaces = {};
     this.matrixItems = {};
