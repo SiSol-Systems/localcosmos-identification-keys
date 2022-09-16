@@ -37,7 +37,7 @@ export interface NatureGuideTreeNode {
     childrenCount: number
 }
 
-export interface NatureGuide {
+export class NatureGuide {
     uuid: string
     version: number
     options: NatureGuideOptions
@@ -47,4 +47,35 @@ export interface NatureGuide {
     crossLinks: any // todo: missing type info
     startNodeUuid: string
     isMulticontent: boolean
+
+    constructor(options: {
+        uuid: string
+        version: number
+        options: NatureGuideOptions
+        globalOptions: any
+        name:  string
+        tree: { [uuid: string]: NatureGuideTreeNode }
+        crossLinks: any
+        startNodeUuid: string
+        isMulticontent: boolean
+    }) {
+        this.uuid = options.uuid
+        this.version = options.version
+        this.options = options.options
+        this.globalOptions = options.globalOptions
+        this.name = options.name
+        this.tree = options.tree
+        this.crossLinks = options.crossLinks
+        this.startNodeUuid = options.startNodeUuid
+        this.isMulticontent = options.isMulticontent
+    }
+
+    getTreeNode (nodeId: string ) {
+        return this.tree[nodeId] || null
+    }
+
+    getFilteredChildren (nodeId: string) {
+        // for now return all children of a node, till we implemented filters
+        return this.tree[nodeId].children
+    }
 }
