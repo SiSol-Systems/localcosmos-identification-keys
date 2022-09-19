@@ -1,10 +1,6 @@
-import { MatrixFilterDefinition } from "./matrix-filters/MatrixFilter";
-import { DescriptiveTextAndImagesFilter } from "./matrix-filters/DescriptiveTextAndImagesFilter";
-import { ColorFilter } from "./matrix-filters/ColorFilter";
-import { RangeFilter } from "./matrix-filters/RangeFilter";
-import { NumberFilter } from "./matrix-filters/NumberFilter";
-import { TextOnlyFilter } from "./matrix-filters/TextOnlyFilter";
-import { TaxonFilter } from "./matrix-filters/TaxonFilter";
+import { MatrixFilter } from "./matrix-filters/MatrixFilter";
+import { TaxonReference } from "./Taxon";
+import {MatrixFilterSpace} from "./spaces/MatrixFilterSpace";
 
 export enum IdentificationEvents {
   matrixFilterUpdate = "matrixFilterUpdate",
@@ -14,22 +10,8 @@ export enum IdentificationEvents {
   spaceBecamePossible = "spaceBecamePossible",
   matrixItemUpdate = "matrixItemUpdate",
   matrixItem100percent = "matrixItem100percent",
+  childrenUpdated = 'childrenUpdated'
 }
-
-type MatrixFilterType = typeof DescriptiveTextAndImagesFilter | typeof ColorFilter | typeof RangeFilter | typeof NumberFilter | typeof TextOnlyFilter | typeof TaxonFilter;
-
-type MatrixFilterTypeMap = {
-  [key: string]: MatrixFilterType;
-};
-
-const MatrixFilterClassMap: MatrixFilterTypeMap = {
-  DescriptiveTextAndImagesFilter: DescriptiveTextAndImagesFilter,
-  ColorFilter: ColorFilter,
-  RangeFilter: RangeFilter,
-  NumberFilter: NumberFilter,
-  TextOnlyFilter: TextOnlyFilter,
-  TaxonFilter: TaxonFilter
-};
 
 interface IdentificationEventCallback {
   (eventType: string): void;
@@ -39,6 +21,21 @@ interface IdentificationEventCallback {
 export enum IdentificationModes {
   ranking = "ranking",
   exclustionCriterion = "exclusionCriterion"
+}
+
+export interface IdentificationKeyReference {
+  id: number
+  uuid: string
+  metaNodeId: number
+  nodeType: 'node' | 'result' // todo: any more?
+  imageUrl: string
+  space: any // todo: missing type info
+  maxPoints: number
+  isVisible: boolean
+  name: string
+  decisionRule: string
+  taxon: TaxonReference | null
+  factSheets: any[] // todo: missing type info
 }
 
 export interface IdentificationSettings {
@@ -51,62 +48,119 @@ export interface IdentificationSettings {
   valueBecamePossible: IdentificationEventCallback
 }
 
-export interface IdentificationKeyData {
-  items: [],
-  matrixFilters: Record<string, MatrixFilterDefinition>
-}
-
 export class IdentificationKey {
+  public matrixFilters: Record<string, MatrixFilter> = {}
+  public filteredChildren: IdentificationKeyReference[] = []
+  public selectedFilterSpaces: { [filterUuid: string]: MatrixFilterSpace } = {}
 
-  identificationKeyData: IdentificationKeyData
+  private listeners: Record<string, Function[]> = {}
 
-  constructor(identificationKeyData: IdentificationKeyData, settings: IdentificationSettings) {
-    this.identificationKeyData = identificationKeyData;
+  constructor(
+    public name: string,
+    public taxon: TaxonReference | null,
+    public children: IdentificationKeyReference[],
+    public identificationMode: 'fluid' | 'strict',
+    public childrenCount: number,
+    matrixFilters: Record<string, MatrixFilter>,
+  ) {
 
-    this.activateData();
+    for (const matrixFilterUuid in matrixFilters) {
+      const matrixFilter = matrixFilters[matrixFilterUuid];
+      const matrixFilterClass = MatrixFilter // MatrixFilterClassMap[matrixFilter.type];
+      this.matrixFilters[matrixFilterUuid] = new matrixFilterClass(
+          matrixFilter.uuid,
+          matrixFilter.type,
+          matrixFilter.definition,
+          matrixFilter.name,
+          matrixFilter.description,
+          matrixFilter.isMultispace,
+          matrixFilter.isVisible,
+          matrixFilter.isRestricted,
+          matrixFilter.weight,
+          matrixFilter.restrictions,
+          matrixFilter.allowMultipleValues,
+          matrixFilter.space,
+          this,
+      )
+    }
+    this.calculateFilteredChildren();
   }
 
-  activateData() {
-    const matrixFilterDefinitions = this.identificationKeyData["matrixFilters"];
+  /**
+   * Register a callback for an identification event
+   *
+   * @param event
+   * @param callback
+   */
+  on(event: IdentificationEvents, callback: Function): void {
+    if (!this.listeners[event]) {
+      this.listeners[event] = []
+    }
+    this.listeners[event].push(callback)
+  }
 
-    for (let matrixFilterUuid in matrixFilterDefinitions) {
-      let matrixFilterDefinition = matrixFilterDefinitions[matrixFilterUuid];
-      let MatrixFilterClass = MatrixFilterClassMap[matrixFilterDefinition.filterType];
+  /**
+   * Unregister a callback for an event
+   *
+   * @param event
+   * @param callback
+   */
+  off(event: IdentificationEvents, callback: Function): void {
+    if (this.listeners[event]) {
+      this.listeners[event] = this.listeners[event].filter(f => f !== callback)
     }
   }
 
-  on(event: IdentificationEvents): void {
-
+  /**
+   * Notifies all registered listeners for a given event.
+   *
+   * @param event
+   * @param payload optional payload for the event
+   * @private
+   */
+  private notifyListeners(event: IdentificationEvents, ...payload: any[]) {
+    (this.listeners[event] || []).forEach(callback => {
+      callback.call(callback, [event, this, ...payload])
+    })
   }
-
-  off(event: IdentificationEvents): void {
-
-  }
-
-  selectValue(): void {
-
-  }
-
-  unSelectValue(): void {
-
-  }
-
-  evaluate(): void {
-
-  }
-
-  reset(): void { }
 
   /**
-   * The programmer has to notify the IdentificationKey if the user selected a certain Matrix Filter Space
+   * This method is automatically called when a space of one of this IdentificationKeys MatrixFilters is selected.
+   * It can also be called manually.
    */
-
-  selectSpace(spaceIdentifier: string): void {
-
+  onSelectSpace(filter: MatrixFilter, space: MatrixFilterSpace): void {
+    this.selectedFilterSpaces[filter.uuid] = space
+    this.calculateFilteredChildren()
   }
 
-  deselectSpace(spaceIdentifier: string): void {
-
+  /**
+   * This method is automatically called when a space of one of this IdentificationKeys MatrixFilters is deselected.
+   * It can also be called manually.
+   */
+  onDeselectSpace(filter: MatrixFilter, space: MatrixFilterSpace): void {
+    delete this.selectedFilterSpaces[filter.uuid]
+    this.calculateFilteredChildren()
   }
 
+  /**
+   * Updates `filteredChildren` by iterating over all selected filters and removing items that don't match selected filters
+   * @private
+   */
+  private calculateFilteredChildren() {
+    this.filteredChildren = this.children;
+    Object.entries(this.selectedFilterSpaces).forEach(([filterId, space]) => {
+      this.filteredChildren = this.filteredChildren.filter(child => {
+        // check if the filter has a space encoded for this item:
+        if (filterId in child.space) {
+          const visible = this.matrixFilters[filterId].isIdentificationKeyVisible(space, child)
+          console.log(`IdentificationKeyReference "${child.name}" is ${visible ? 'visible':'not visible'} for filter ${filterId}`)
+          return visible
+        }
+
+        // keep children where this filter does not apply
+        return true
+      })
+    })
+    this.notifyListeners(IdentificationEvents.childrenUpdated)
+  }
 }

@@ -1,105 +1,96 @@
-import { 
-  MatrixFilterSpace,
-  MatrixFilterSpaceDefinition,
-  MatrixFilterSpaceConstructor
-} from "../spaces/MatrixFilterSpace";
+import { MatrixFilterSpace } from "../spaces/MatrixFilterSpace";
 import { MatrixItem } from "../MatrixItem";
+import {IdentificationKey, IdentificationKeyReference} from "../IdentificationKey";
+// import { DescriptiveTextAndImagesFilter } from "./DescriptiveTextAndImagesFilter";
+// import { ColorFilter } from "./ColorFilter";
+// import { RangeFilter } from "./RangeFilter";
+// import { NumberFilter } from "./NumberFilter";
+// import { TextOnlyFilter } from "./TextOnlyFilter";
+// import { TaxonFilter } from "./TaxonFilter";
+// export const MatrixFilterClassMap = {
+//   DescriptiveTextAndImagesFilter: DescriptiveTextAndImagesFilter,
+//   ColorFilter: ColorFilter,
+//   RangeFilter: RangeFilter,
+//   NumberFilter: NumberFilter,
+//   TextOnlyFilter: TextOnlyFilter,
+//   TaxonFilter: TaxonFilter
+// };
 
-export enum MatrixFilterTypes {
-  DescriptiveTextAndImagesFlter = "DescriptiveTextAndImagesFilter",
-  TextOnlyFilter = "TextOnlyFilter",
-  ColorFilter = "ColorFilter",
-  RangeFilter = "RangeFilter",
-  NumberFilter = "NumberFilter",
-  TaxonFilter = "TaxonFilter"
-}
+export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
 
 export interface MatrixFilterDefinition {
   name: string,
-  filterType: MatrixFilterTypes,
   weight: number,
   allowMultipleValues: boolean
 }
 
 export class MatrixFilter {
-
-  uuid: string
-
-  definition: MatrixFilterDefinition
-
-  name: string
-  description: string
-
-  isMultispace: boolean
-  isVisible: boolean
-  isRestricted: boolean
-
-  weight: number
-  restrictions: any // unknown
-  allowMultipleValues: boolean
-
-  matrixFilterSpaceClass: MatrixFilterSpaceConstructor
-  matrixFilterSpaces: Record<string, MatrixFilterSpace>
+  public space: Record<string, MatrixFilterSpace> = {}
   matrixItems: Record<string, MatrixItem>
   activeMatrixItems: Record<string, MatrixItem>
 
-  constructor(uuid: string, definition: MatrixFilterDefinition) {
-    this.uuid = uuid;
-
-    this.name = '';
-    this.description = '';
-
-    this.isMultispace = false;
-    this.isVisible = true;
-    this.isRestricted = false;
-    this.definition = definition;
-
-    this.weight = 1;
-    this.allowMultipleValues = false;
-
-    this.matrixFilterSpaces = {};
+  constructor(
+    public uuid: string,
+    public type: MatrixFilterType,
+    public definition: MatrixFilterDefinition,
+    public name: string = '',
+    public description: string = '',
+    public isMultispace: boolean = false,
+    public isVisible: boolean = true,
+    public isRestricted: boolean = false,
+    public weight: number = 1,
+    public restrictions: any = {}, // todo, type unknown
+    public allowMultipleValues: boolean = false,
+    space: Record<string, MatrixFilterSpace> = {},
+    public identificationKey: IdentificationKey,
+  ) {
     this.matrixItems = {};
     this.activeMatrixItems = {};
-
-    this.matrixFilterSpaceClass = MatrixFilterSpace;
-
+    for(const spaceId in space) {
+      this.space[spaceId] = new MatrixFilterSpace(
+          spaceId,
+          space[spaceId].encodedSpace,
+          space[spaceId].imageUrl,
+          space[spaceId].secondaryImageUrl,
+          this,
+      )
+    }
   }
 
   /**
-   * MATRIX FILTER SPACE MANAGEMENT
-   * MatrixFilterSpaces are added when reading the MatrixItems
+   * Triggered by a space once it is selected or can be manually called.
+   *
+   * This will inform other spaces in this Filter as well as the IdentificationKey for this filter
+   * @param space
    */
-
-  // return b64 encoded space_identifier
-  // space is the parsed space from JSON.parse
-  getSpaceIdentifier(spaceDefinition: MatrixFilterSpaceDefinition): string {
-    throw new Error("[MatrixFilter] subclasses require a getSpaceIdentifier method");
-  }
-
-  getSpaceIdentifierFromStr(space: string): string {
-    throw new Error("[MatrixFilter] subclasses require a getSpaceIdentifierFromStr method");
-  }
-
-  parseSpaceStr(space: string){
-    throw new Error("[MatrixFilter] subclasses require a parseSpaceStr method");
-  }
-
-  getSpaceFromSpaceIdentifier(spaceIdentifier: string): MatrixFilterSpace {
-    throw new Error("[MatrixFilter] subclasses require a getSpaceFromSpaceIdentifier method");
-  }
-
-  addMatrixFilterSpace(spaceDefinition: MatrixFilterSpaceDefinition): MatrixFilterSpace {
-    const spaceIdentifier = this.getSpaceIdentifier(spaceDefinition);
-    let matrixFilterSpace: MatrixFilterSpace;
-
-    if (!(spaceIdentifier in this.matrixFilterSpaces)){
-      matrixFilterSpace = new this.matrixFilterSpaceClass(this, spaceIdentifier);
-      this.matrixFilterSpaces[spaceIdentifier] = matrixFilterSpace;
+  onSelectSpace (space: MatrixFilterSpace): void {
+    this.identificationKey.onSelectSpace(this, space)
+    for(const spaceId in this.space) {
+      if (space.spaceIdentifier !== spaceId) {
+        this.space[spaceId].onOtherSpaceSelected(space)
+      }
     }
-    else {
-      matrixFilterSpace = this.matrixFilterSpaces[spaceIdentifier];
-    }
+  }
 
-    return matrixFilterSpace;
+  /**
+   * Triggered by a space once it is deselected or can be manually called.
+   *
+   * This will inform other spaces in this Filter as well as the IdentificationKey for this filter
+   * @param space
+   */
+  onDeselectSpace (space: MatrixFilterSpace): void {
+    this.identificationKey.onDeselectSpace(this, space)
+  }
+
+  /**
+   * Returns true if this space includes the given item
+   * @param space
+   * @param identificationKey
+   * @private
+   */
+  isIdentificationKeyVisible(space: MatrixFilterSpace, identificationKey: IdentificationKeyReference) {
+    // todo: do we overwrite this in subclasses?
+    return identificationKey.space[this.uuid] &&
+        space.encodedSpace === identificationKey.space[this.uuid][0];
   }
 }
