@@ -1,4 +1,4 @@
-import { MatrixFilterDefinition } from "./MatrixFilter";
+import { MatrixFilterDefinition } from "./matrix-filters/MatrixFilter";
 import { DescriptiveTextAndImagesFilter } from "./matrix-filters/DescriptiveTextAndImagesFilter";
 import { ColorFilter } from "./matrix-filters/ColorFilter";
 import { RangeFilter } from "./matrix-filters/RangeFilter";
@@ -7,12 +7,13 @@ import { TextOnlyFilter } from "./matrix-filters/TextOnlyFilter";
 import { TaxonFilter } from "./matrix-filters/TaxonFilter";
 
 export enum IdentificationEvents {
-  done = "done",
-  pointsUpdate = "pointsUpdate",
+  matrixFilterUpdate = "matrixFilterUpdate",
   matrixFilterBecameVisible = "matrixFilterBecameVisible",
   matrixFilterBecameInvisible = "matrixFilterBecameInvisible",
   spaceBecameImpossible = "spaceBecameImpossible",
   spaceBecamePossible = "spaceBecamePossible",
+  matrixItemUpdate = "matrixItemUpdate",
+  matrixItem100percent = "matrixItem100percent",
 }
 
 type MatrixFilterType = typeof DescriptiveTextAndImagesFilter | typeof ColorFilter | typeof RangeFilter | typeof NumberFilter | typeof TextOnlyFilter | typeof TaxonFilter;
@@ -70,7 +71,7 @@ export class IdentificationKey {
 
     for (let matrixFilterUuid in matrixFilterDefinitions) {
       let matrixFilterDefinition = matrixFilterDefinitions[matrixFilterUuid];
-      let MatrixFilterClass = MatrixFilterClassMap[matrixFilterDefinition.type];
+      let MatrixFilterClass = MatrixFilterClassMap[matrixFilterDefinition.filterType];
     }
   }
 
@@ -96,5 +97,16 @@ export class IdentificationKey {
 
   reset(): void { }
 
+  /**
+   * The programmer has to notify the IdentificationKey if the user selected a certain Matrix Filter Space
+   */
+
+  selectSpace(spaceIdentifier: string): void {
+
+  }
+
+  deselectSpace(spaceIdentifier: string): void {
+
+  }
 
 }
