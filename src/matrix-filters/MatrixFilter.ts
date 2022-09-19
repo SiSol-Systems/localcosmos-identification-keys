@@ -2,8 +2,8 @@ import {
   MatrixFilterSpace,
   MatrixFilterSpaceDefinition,
   MatrixFilterSpaceConstructor
-} from "./MatrixFilterSpace";
-import { MatrixItem } from "./MatrixItem";
+} from "../spaces/MatrixFilterSpace";
+import { MatrixItem } from "../MatrixItem";
 
 export enum MatrixFilterTypes {
   DescriptiveTextAndImagesFlter = "DescriptiveTextAndImagesFilter",
@@ -16,7 +16,7 @@ export enum MatrixFilterTypes {
 
 export interface MatrixFilterDefinition {
   name: string,
-  type: MatrixFilterTypes,
+  filterType: MatrixFilterTypes,
   weight: number,
   allowMultipleValues: boolean
 }
