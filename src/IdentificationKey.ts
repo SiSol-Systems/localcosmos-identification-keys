@@ -118,9 +118,9 @@ export class IdentificationKey {
    * @param payload optional payload for the event
    * @private
    */
-  private notifyListeners(event: IdentificationEvents, ...payload: any[]) {
+  notifyListeners(event: IdentificationEvents, ...payload: any[]) {
     (this.listeners[event] || []).forEach(callback => {
-      callback.call(callback, [event, this, ...payload])
+      callback.call(callback, event, this, ...payload)
     })
   }
 
@@ -161,6 +161,6 @@ export class IdentificationKey {
         return true
       })
     })
-    this.notifyListeners(IdentificationEvents.childrenUpdated)
+    this.notifyListeners(IdentificationEvents.childrenUpdated, this.filteredChildren)
   }
 }
