@@ -17,16 +17,13 @@ interface IdentificationEventCallback {
   (eventType: string): void;
 }
 
-
 export enum IdentificationModes {
   ranking = "ranking",
   exclustionCriterion = "exclusionCriterion"
 }
 
 export interface IdentificationKeyReference {
-  id: number
   uuid: string
-  metaNodeId: number
   nodeType: 'node' | 'result' // todo: any more?
   imageUrl: string
   space: any // todo: missing type info
@@ -67,7 +64,7 @@ export class IdentificationKey {
     for (const matrixFilterUuid in matrixFilters) {
       const matrixFilter = matrixFilters[matrixFilterUuid];
       const matrixFilterClass = MatrixFilter // MatrixFilterClassMap[matrixFilter.type];
-      this.matrixFilters[matrixFilterUuid] = new matrixFilterClass(
+      const filter = new matrixFilterClass(
           matrixFilter.uuid,
           matrixFilter.type,
           matrixFilter.definition,
@@ -79,9 +76,13 @@ export class IdentificationKey {
           matrixFilter.weight,
           matrixFilter.restrictions,
           matrixFilter.allowMultipleValues,
-          matrixFilter.space,
           this,
       )
+      matrixFilter.space.forEach(space => {
+        filter.createSpace(space)
+      })
+
+      this.matrixFilters[matrixFilterUuid] = filter;
     }
     this.calculateFilteredChildren();
   }
@@ -152,9 +153,7 @@ export class IdentificationKey {
       this.filteredChildren = this.filteredChildren.filter(child => {
         // check if the filter has a space encoded for this item:
         if (filterId in child.space) {
-          const visible = this.matrixFilters[filterId].isIdentificationKeyVisible(space, child)
-          console.log(`IdentificationKeyReference "${child.name}" is ${visible ? 'visible':'not visible'} for filter ${filterId}`)
-          return visible
+          return this.matrixFilters[filterId].isIdentificationKeyVisible(space, child)
         }
 
         // keep children where this filter does not apply

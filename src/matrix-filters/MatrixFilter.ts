@@ -24,8 +24,13 @@ export interface MatrixFilterDefinition {
   allowMultipleValues: boolean
 }
 
+interface MatrixFilterRestriction {
+  encodedSpace: string
+  spaceId: string
+}
+
 export class MatrixFilter {
-  public space: Record<string, MatrixFilterSpace> = {}
+  public space: MatrixFilterSpace[] = []
   matrixItems: Record<string, MatrixItem>
   activeMatrixItems: Record<string, MatrixItem>
 
@@ -39,22 +44,12 @@ export class MatrixFilter {
     public isVisible: boolean = true,
     public isRestricted: boolean = false,
     public weight: number = 1,
-    public restrictions: any = {}, // todo, type unknown
+    public restrictions: Record<string, MatrixFilterRestriction> = {},
     public allowMultipleValues: boolean = false,
-    space: Record<string, MatrixFilterSpace> = {},
     public identificationKey: IdentificationKey,
   ) {
     this.matrixItems = {};
     this.activeMatrixItems = {};
-    for(const spaceId in space) {
-      this.space[spaceId] = new MatrixFilterSpace(
-          spaceId,
-          space[spaceId].encodedSpace,
-          space[spaceId].imageUrl,
-          space[spaceId].secondaryImageUrl,
-          this,
-      )
-    }
   }
 
   /**
@@ -92,5 +87,22 @@ export class MatrixFilter {
     // todo: do we overwrite this in subclasses?
     return identificationKey.space[this.uuid] &&
         space.encodedSpace === identificationKey.space[this.uuid][0];
+  }
+
+  /**
+   * todo: add type definition
+   * @param spaceDefinition
+   */
+  createSpace(spaceDefinition: any) {
+    const space = new MatrixFilterSpace(
+        spaceDefinition.spaceIdentifier,
+        spaceDefinition.encodedSpace,
+        spaceDefinition.imageUrl,
+        spaceDefinition.secondaryImageUrl,
+        this
+    )
+    this.space.push(space)
+
+    return space
   }
 }

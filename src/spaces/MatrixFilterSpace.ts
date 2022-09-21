@@ -27,16 +27,20 @@ export class MatrixFilterSpace {
    * The user selects a certain MatrixFilterSpace in the frontend.
    */
   select(): void {
-    this.isSelected = true;
-    this.matrixFilter.onSelectSpace(this);
+    if (this.isPossible) {
+      this.isSelected = true;
+      this.matrixFilter.onSelectSpace(this);
+    }
   }
 
   /**
    * The user deselects a certain MatrixFilterSpace in the frontend.
    */
   deselect(): void {
-    this.isSelected = false;
-    this.matrixFilter.onDeselectSpace(this);
+    if (this.isSelected) {
+      this.isSelected = false;
+      this.matrixFilter.onDeselectSpace(this);
+    }
   }
 
   /**
@@ -45,6 +49,10 @@ export class MatrixFilterSpace {
    * @param otherSpace
    */
   onOtherSpaceSelected (otherSpace: MatrixFilterSpace): void {
-    this.isSelected = false;
+    if (!this.matrixFilter.isMultispace) {
+      this.isSelected = false;
+    }
+    // todo: is this correct? should it become possible again after de-selection?
+    this.isPossible = false
   }
 }
