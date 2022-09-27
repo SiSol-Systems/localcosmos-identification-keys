@@ -2,7 +2,7 @@ import { MatrixFilter } from "./MatrixFilter";
 
 export interface MatrixFilterSpaceReference {
   spaceIdentifier: string
-  encodedSpace: string
+  encodedSpace: any
 }
 
 export class MatrixFilterSpace {
@@ -11,7 +11,7 @@ export class MatrixFilterSpace {
 
   constructor(
       public spaceIdentifier: string,
-      public encodedSpace: string,
+      public encodedSpace: any,
       public imageUrl: string | null,
       public secondaryImageUrl: string | null,
       public matrixFilter: MatrixFilter,
@@ -62,3 +62,15 @@ export class MatrixFilterSpace {
     this.isPossible = true
   }
 }
+
+export class DescriptiveTextAndImagesFilterSpace extends MatrixFilterSpace {}
+export class ColorFilterSpace extends MatrixFilterSpace {}
+export class TextOnlyFilterSpace extends MatrixFilterSpace {}
+export class TaxonFilterSpace extends MatrixFilterSpace {}
+
+export const MatrixFilterSpaceClassMap = {
+  DescriptiveTextAndImagesFilterSpace: DescriptiveTextAndImagesFilterSpace,
+  ColorFilterSpace: ColorFilterSpace,
+  TextOnlyFilterSpace: TextOnlyFilterSpace,
+  TaxonFilterSpace: TaxonFilterSpace,
+};

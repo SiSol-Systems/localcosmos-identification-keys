@@ -79,7 +79,7 @@ export class IdentificationKey {
           matrixFilter.allowMultipleValues,
           this,
       )
-      matrixFilter.space.forEach(space => {
+      matrixFilter.space?.forEach(space => {
         filter.createSpace(space)
       })
 

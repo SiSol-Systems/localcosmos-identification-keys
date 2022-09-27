@@ -105,7 +105,14 @@ export class MatrixFilter {
 }
 
 export class DescriptiveTextAndImagesFilter extends MatrixFilter {}
-export class ColorFilter extends MatrixFilter {}
+export class ColorFilter extends MatrixFilter {
+  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
+    // in the case of color filters the encoded space is an array of numbers describing the color as rgba,
+    // so we compare elementwise:
+    return space.spaceIdentifier === reference.spaceIdentifier &&
+        space.encodedSpace.every((color: number, i: number) => color === reference.encodedSpace[i])
+  }
+}
 export class RangeFilter extends MatrixFilter {}
 export class NumberFilter extends MatrixFilter {}
 export class TextOnlyFilter extends MatrixFilter {}
