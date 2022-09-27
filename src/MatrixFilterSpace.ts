@@ -1,5 +1,10 @@
 import { MatrixFilter } from "./MatrixFilter";
 
+export interface MatrixFilterSpaceReference {
+  spaceIdentifier: string
+  encodedSpace: string
+}
+
 export class MatrixFilterSpace {
   isSelected: boolean
   isPossible: boolean
@@ -7,8 +12,8 @@ export class MatrixFilterSpace {
   constructor(
       public spaceIdentifier: string,
       public encodedSpace: string,
-      public imageUrl: string,
-      public secondaryImageUrl: string,
+      public imageUrl: string | null,
+      public secondaryImageUrl: string | null,
       public matrixFilter: MatrixFilter,
   ) {
     this.isSelected = false;
@@ -41,7 +46,7 @@ export class MatrixFilterSpace {
    * @param otherSpace
    */
   onOtherSpaceSelected (otherSpace: MatrixFilterSpace): void {
-    if (!this.matrixFilter.isMultispace) {
+    if (!this.matrixFilter.allowMultipleValues) {
       this.isSelected = false;
     }
     // todo: is this correct?

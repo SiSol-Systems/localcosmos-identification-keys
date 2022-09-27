@@ -2,7 +2,7 @@ import {describe, beforeEach, test, expect, jest} from "@jest/globals";
 
 import { IdentificationKey } from "./../src/IdentificationKey";
 import { MatrixFilter } from "./../src/MatrixFilter";
-import { MatrixFilterSpace } from "./../src/MatrixFilterSpace";
+import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./../src/MatrixFilterSpace";
 import IdentificationKeyFixture from "./fixtures/identificationKey";
 
 describe('MatrixFilter', () => {
@@ -44,6 +44,44 @@ describe('MatrixFilter', () => {
         expect(otherSpace.onOtherSpaceDeselected).not.toHaveBeenCalled()
         filter.onDeselectSpace(space)
         expect(otherSpace.onOtherSpaceDeselected).toHaveBeenCalledWith(space)
+    })
+
+    describe('isIdentificationKeyVisible', () => {
+        test('returns true if selected space is included in the given reference space', () => {
+            expect(filter.isIdentificationKeyVisible(space, identificationKey.children[0])).toEqual(true)
+        })
+
+        test('returns false if selected space is not included in the given reference space', () => {
+            expect(filter.isIdentificationKeyVisible(space, identificationKey.children[1])).toEqual(false)
+        })
+
+        test('calls filter.spaceMatchesReference implementation to determine visibility', () => {
+            const matchSpy: any = jest.fn()
+            filter.spaceMatchesReference = matchSpy
+            filter.isIdentificationKeyVisible(space, identificationKey.children[0])
+            console.log(matchSpy.mock.calls)
+            expect(matchSpy).toHaveBeenCalledWith(space, identificationKey.children[0].space['ee604429-7236-4be6-8ab5-31b9ca62d5cd'][0])
+        })
+    })
+
+    describe('spaceMatchesReference', () => {
+        test('returns true if identifier and space match', () => {
+            const space = new MatrixFilterSpace('id', '<p>test</p>', null, null, filter)
+            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'id', encodedSpace: '<p>test</p>' }
+            expect(filter.spaceMatchesReference(space, reference)).toEqual(true)
+        })
+
+        test('returns false if identifier does not match', () => {
+            const space = new MatrixFilterSpace('id', '<p>test</p>', null, null, filter)
+            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'other-id', encodedSpace: '<p>test</p>' }
+            expect(filter.spaceMatchesReference(space, reference)).toEqual(false)
+        })
+
+        test('returns false if encoded space does not match', () => {
+            const space = new MatrixFilterSpace('id', '<p>test</p>', null, null, filter)
+            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'id', encodedSpace: '<p>no test</p>' }
+            expect(filter.spaceMatchesReference(space, reference)).toEqual(false)
+        })
     })
 
     test('createSpace adds a new space to the filter', () => {

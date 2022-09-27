@@ -1,14 +1,9 @@
-import { MatrixFilterSpace } from "./MatrixFilterSpace";
+import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
 import { MatrixItem } from "./MatrixItem";
 import { IdentificationKey, IdentificationKeyReference } from "./IdentificationKey";
+import {ref} from "../../.nuxt/imports";
 
 export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
-
-export interface MatrixFilterDefinition {
-  name: string,
-  weight: number,
-  allowMultipleValues: boolean
-}
 
 interface MatrixFilterRestriction {
   encodedSpace: string
@@ -23,10 +18,8 @@ export class MatrixFilter {
   constructor(
     public uuid: string,
     public type: MatrixFilterType,
-    public definition: MatrixFilterDefinition,
     public name: string = '',
     public description: string | null = '',
-    public isMultispace: boolean = false, // todo: difference between this and allowMultipleValues
     public isVisible: boolean = true,
     public isRestricted: boolean = false,
     public weight: number = 1,
@@ -69,22 +62,35 @@ export class MatrixFilter {
   }
 
   /**
-   * Returns true if this space includes the given item
+   * Returns true if the given space matches a given item reference
+   *
    * @param space
    * @param identificationKey
-   * @private
    */
-  isIdentificationKeyVisible(space: MatrixFilterSpace, identificationKey: IdentificationKeyReference) {
-    // todo: do we overwrite this in subclasses?
-    return identificationKey.space[this.uuid] &&
-        space.encodedSpace === identificationKey.space[this.uuid][0];
+  isIdentificationKeyVisible(space: MatrixFilterSpace, identificationKey: IdentificationKeyReference): boolean {
+    const spaceReference = identificationKey.space[this.uuid]?.find((spaceRef: MatrixFilterSpaceReference) => {
+      return spaceRef.spaceIdentifier === space.spaceIdentifier
+    })
+    return !!spaceReference && this.spaceMatchesReference(space, spaceReference)
+  }
+
+  /**
+   * Checks if a space matches the reference in a MatrixItem.
+   * Might be overwritten in subclasses to perform different calculations.
+   *
+   * @param space
+   * @param reference
+   */
+  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
+    return space.spaceIdentifier === reference.spaceIdentifier &&
+        space.encodedSpace === reference.encodedSpace;
   }
 
   /**
    * todo: add type definition
    * @param spaceDefinition
    */
-  createSpace(spaceDefinition: any) {
+  createSpace(spaceDefinition: any): MatrixFilterSpace {
     const space = new MatrixFilterSpace(
         spaceDefinition.spaceIdentifier,
         spaceDefinition.encodedSpace,

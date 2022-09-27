@@ -47,14 +47,14 @@ describe('MatrixFilterSpace', () => {
 
     test('element deselects if other space is selected and its not a multispace', () => {
         space.isSelected = true
-        filter.isMultispace = false
+        filter.allowMultipleValues = false
         space.onOtherSpaceSelected(filter.space[1])
         expect(space.isSelected).toEqual(false)
     })
 
     test('element not deselected if other space is selected but its a multispace', () => {
         space.isSelected = true
-        filter.isMultispace = true
+        filter.allowMultipleValues = true
         space.onOtherSpaceSelected(filter.space[1])
         expect(space.isSelected).toEqual(true)
     })

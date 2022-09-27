@@ -1,6 +1,6 @@
 import { MatrixFilter, MatrixFilterClassMap } from "./MatrixFilter";
 import { TaxonReference } from "./Taxon";
-import {MatrixFilterSpace} from "./MatrixFilterSpace";
+import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
 
 export enum IdentificationEvents {
   matrixFilterUpdate = "matrixFilterUpdate",
@@ -26,7 +26,7 @@ export interface IdentificationKeyReference {
   uuid: string
   nodeType: 'node' | 'result' // todo: any more?
   imageUrl: string
-  space: any // todo: missing type info
+  space: Record<string, MatrixFilterSpaceReference[]>,
   maxPoints: number
   isVisible: boolean
   name: string
@@ -67,10 +67,8 @@ export class IdentificationKey {
       const filter = new matrixFilterClass(
           matrixFilter.uuid,
           matrixFilter.type,
-          matrixFilter.definition,
           matrixFilter.name,
           matrixFilter.description,
-          matrixFilter.isMultispace,
           matrixFilter.isVisible,
           matrixFilter.isRestricted,
           matrixFilter.weight,
