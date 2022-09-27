@@ -80,6 +80,8 @@ export default () => {
       children as any,
       'fluid',
       2,
-      filters as any
+      [],
+      'garnelen-etc',
+      filters as any,
   )
 }

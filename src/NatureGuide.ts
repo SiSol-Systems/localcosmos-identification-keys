@@ -24,6 +24,7 @@ export class NatureGuide {
         public crossLinks: any, // todo: missing type info
         public startNodeUuid: string,
         public isMulticontent: boolean,
+        public slugs: Record<string, string>,
         tree: { [uuid: string]: IdentificationKey },
     ) {
         for (const key in tree) {
@@ -33,6 +34,8 @@ export class NatureGuide {
                 tree[key].children,
                 tree[key].identificationMode,
                 tree[key].childrenCount,
+                tree[key].factSheets,
+                tree[key].slug,
                 tree[key].matrixFilters,
             )
         }

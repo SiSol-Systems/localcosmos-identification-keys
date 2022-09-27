@@ -59,7 +59,6 @@ describe('MatrixFilter', () => {
             const matchSpy: any = jest.fn()
             filter.spaceMatchesReference = matchSpy
             filter.isIdentificationKeyVisible(space, identificationKey.children[0])
-            console.log(matchSpy.mock.calls)
             expect(matchSpy).toHaveBeenCalledWith(space, identificationKey.children[0].space['ee604429-7236-4be6-8ab5-31b9ca62d5cd'][0])
         })
     })

@@ -33,6 +33,7 @@ export interface IdentificationKeyReference {
   decisionRule: string
   taxon: TaxonReference | null
   factSheets: any[] // todo: missing type info
+  slug: string
 }
 
 export interface IdentificationSettings {
@@ -58,6 +59,8 @@ export class IdentificationKey {
     public children: IdentificationKeyReference[],
     public identificationMode: 'fluid' | 'strict',
     public childrenCount: number,
+    public factSheets: any[], // todo: missing type info
+    public slug: string,
     matrixFilters: Record<string, MatrixFilter>,
   ) {
 
