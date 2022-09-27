@@ -1,5 +1,4 @@
-import { TaxonReference } from "./Taxon";
-import { MatrixFilter } from "./MatrixFilter";
+import {IdentificationKey} from "./IdentificationKey";
 
 export interface ResultAction {
     id: number
@@ -13,38 +12,36 @@ export interface NatureGuideOptions {
     resultAction: ResultAction
 }
 
-export interface NatureGuideTreeNodeReference {
-    id: number
-    uuid: string
-    metaNodeId: number
-    nodeType: 'node' | 'result' // todo: any more?
-    imageUrl: string
-    space: any // todo: missing type info
-    maxPoints: number
-    isVisible: boolean
-    name: string
-    decisionRule: string
-    taxon: TaxonReference | null
-    factSheets: any[] // todo: missing type info
-}
+export class NatureGuide {
+    public tree: { [uuid: string]: IdentificationKey } = {}
 
-export interface NatureGuideTreeNode {
-    name: string
-    taxon: TaxonReference | null
-    children: NatureGuideTreeNodeReference[]
-    matrixFilters: { [uuid: string]: MatrixFilter }
-    identificationMode: 'fluid' | 'strict' // todo: any more?
-    childrenCount: number
-}
+    constructor(
+        public uuid: string,
+        public version: number,
+        public options: NatureGuideOptions,
+        public globalOptions: any, // todo: missing type info
+        public name: string,
+        public crossLinks: any, // todo: missing type info
+        public startNodeUuid: string,
+        public isMulticontent: boolean,
+        public slugs: Record<string, string>,
+        tree: { [uuid: string]: IdentificationKey },
+    ) {
+        for (const key in tree) {
+            this.tree[key] = new IdentificationKey(
+                tree[key].name,
+                tree[key].taxon,
+                tree[key].children,
+                tree[key].identificationMode,
+                tree[key].childrenCount,
+                tree[key].factSheets,
+                tree[key].slug,
+                tree[key].matrixFilters,
+            )
+        }
+    }
 
-export interface NatureGuide {
-    uuid: string
-    version: number
-    options: NatureGuideOptions
-    globalOptions: any // todo: missing type info
-    name:  string
-    tree: { [uuid: string]: NatureGuideTreeNode }
-    crossLinks: any // todo: missing type info
-    startNodeUuid: string
-    isMulticontent: boolean
+    getIdentificationKey (nodeId: string ): IdentificationKey {
+        return this.tree[nodeId] || null
+    }
 }

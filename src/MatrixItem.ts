@@ -1,5 +1,5 @@
 import { Taxon } from "./Taxon";
-import { MatrixFilterSpace } from "./spaces/MatrixFilterSpace";
+import { MatrixFilterSpace } from "./MatrixFilterSpace";
 
 
 enum NodeTypes {
