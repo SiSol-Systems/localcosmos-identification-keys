@@ -1,12 +1,4 @@
-import { MatrixFilter } from "../matrix-filters/MatrixFilter";
-import { MatrixItem } from "../MatrixItem";
-import {IdentificationKeyReference} from "../IdentificationKey";
-
-export interface MatrixFilterSpaceDefinition { }
-
-interface MatrixFilterSpaceEventData {
-
-}
+import { MatrixFilter } from "./MatrixFilter";
 
 export class MatrixFilterSpace {
   isSelected: boolean
@@ -52,7 +44,16 @@ export class MatrixFilterSpace {
     if (!this.matrixFilter.isMultispace) {
       this.isSelected = false;
     }
-    // todo: is this correct? should it become possible again after de-selection?
+    // todo: is this correct?
     this.isPossible = false
+  }
+
+  /**
+   * Event triggered once another space within the same MatrixFilter is deselected
+   *
+   * @param otherSpace
+   */
+  onOtherSpaceDeselected (otherSpace: MatrixFilterSpace): void {
+    this.isPossible = true
   }
 }

@@ -1,6 +1,6 @@
-import { MatrixFilter } from "./matrix-filters/MatrixFilter";
+import { MatrixFilter, MatrixFilterClassMap } from "./MatrixFilter";
 import { TaxonReference } from "./Taxon";
-import {MatrixFilterSpace} from "./spaces/MatrixFilterSpace";
+import {MatrixFilterSpace} from "./MatrixFilterSpace";
 
 export enum IdentificationEvents {
   matrixFilterUpdate = "matrixFilterUpdate",
@@ -63,7 +63,7 @@ export class IdentificationKey {
 
     for (const matrixFilterUuid in matrixFilters) {
       const matrixFilter = matrixFilters[matrixFilterUuid];
-      const matrixFilterClass = MatrixFilter // MatrixFilterClassMap[matrixFilter.type];
+      const matrixFilterClass = MatrixFilterClassMap[matrixFilter.type];
       const filter = new matrixFilterClass(
           matrixFilter.uuid,
           matrixFilter.type,

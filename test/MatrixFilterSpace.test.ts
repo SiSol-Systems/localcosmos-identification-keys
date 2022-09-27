@@ -1,8 +1,8 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals';
 
-import { MatrixFilterSpace } from "./../../src/spaces/MatrixFilterSpace";
-import { MatrixFilter } from "./../../src/matrix-filters/MatrixFilter";
-import IdentificationKeyFixture from "./../fixtures/identificationKey";
+import { MatrixFilterSpace } from "./../src/MatrixFilterSpace";
+import { MatrixFilter } from "./../src/MatrixFilter";
+import IdentificationKeyFixture from "./fixtures/identificationKey";
 
 describe('MatrixFilterSpace', () => {
     let space: MatrixFilterSpace, filter: MatrixFilter;

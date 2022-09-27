@@ -54,11 +54,13 @@ export default () => {
       "allowMultipleValues": false,
       "space": [
         {
+          "spaceIdentifier": "ee604429-7236-4be6-8ab5-31b9ca62d5cd:103",
           "encodedSpace": "<p>erstes Beinpaar ohne großen Scheren</p>",
           "imageUrl": "localcosmos/user_content/content_images/image-33-500.webp",
           "secondaryImageUrl": null
         },
         {
+          "spaceIdentifier": "ee604429-7236-4be6-8ab5-31b9ca62d5cd:102",
           "encodedSpace": "<p>erstes Beinpaar mit großen Scheren</p>",
           "imageUrl": "localcosmos/user_content/content_images/image-34-500.webp",
           "secondaryImageUrl": null

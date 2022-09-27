@@ -1,20 +1,6 @@
-import { MatrixFilterSpace } from "../spaces/MatrixFilterSpace";
-import { MatrixItem } from "../MatrixItem";
-import {IdentificationKey, IdentificationKeyReference} from "../IdentificationKey";
-// import { DescriptiveTextAndImagesFilter } from "./DescriptiveTextAndImagesFilter";
-// import { ColorFilter } from "./ColorFilter";
-// import { RangeFilter } from "./RangeFilter";
-// import { NumberFilter } from "./NumberFilter";
-// import { TextOnlyFilter } from "./TextOnlyFilter";
-// import { TaxonFilter } from "./TaxonFilter";
-// export const MatrixFilterClassMap = {
-//   DescriptiveTextAndImagesFilter: DescriptiveTextAndImagesFilter,
-//   ColorFilter: ColorFilter,
-//   RangeFilter: RangeFilter,
-//   NumberFilter: NumberFilter,
-//   TextOnlyFilter: TextOnlyFilter,
-//   TaxonFilter: TaxonFilter
-// };
+import { MatrixFilterSpace } from "./MatrixFilterSpace";
+import { MatrixItem } from "./MatrixItem";
+import { IdentificationKey, IdentificationKeyReference } from "./IdentificationKey";
 
 export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
 
@@ -39,8 +25,8 @@ export class MatrixFilter {
     public type: MatrixFilterType,
     public definition: MatrixFilterDefinition,
     public name: string = '',
-    public description: string = '',
-    public isMultispace: boolean = false,
+    public description: string | null = '',
+    public isMultispace: boolean = false, // todo: difference between this and allowMultipleValues
     public isVisible: boolean = true,
     public isRestricted: boolean = false,
     public weight: number = 1,
@@ -60,11 +46,11 @@ export class MatrixFilter {
    */
   onSelectSpace (space: MatrixFilterSpace): void {
     this.identificationKey.onSelectSpace(this, space)
-    for(const spaceId in this.space) {
-      if (space.spaceIdentifier !== spaceId) {
-        this.space[spaceId].onOtherSpaceSelected(space)
+    this.space.forEach((ownSpace: MatrixFilterSpace) => {
+      if (space.spaceIdentifier !== ownSpace.spaceIdentifier) {
+        ownSpace.onOtherSpaceSelected(space)
       }
-    }
+    })
   }
 
   /**
@@ -75,6 +61,11 @@ export class MatrixFilter {
    */
   onDeselectSpace (space: MatrixFilterSpace): void {
     this.identificationKey.onDeselectSpace(this, space)
+    this.space.forEach((ownSpace: MatrixFilterSpace) => {
+      if (space.spaceIdentifier !== ownSpace.spaceIdentifier) {
+        ownSpace.onOtherSpaceDeselected(space)
+      }
+    })
   }
 
   /**
@@ -106,3 +97,19 @@ export class MatrixFilter {
     return space
   }
 }
+
+export class DescriptiveTextAndImagesFilter extends MatrixFilter {}
+export class ColorFilter extends MatrixFilter {}
+export class RangeFilter extends MatrixFilter {}
+export class NumberFilter extends MatrixFilter {}
+export class TextOnlyFilter extends MatrixFilter {}
+export class TaxonFilter extends MatrixFilter {}
+
+export const MatrixFilterClassMap = {
+  DescriptiveTextAndImagesFilter: DescriptiveTextAndImagesFilter,
+  ColorFilter: ColorFilter,
+  RangeFilter: RangeFilter,
+  NumberFilter: NumberFilter,
+  TextOnlyFilter: TextOnlyFilter,
+  TaxonFilter: TaxonFilter
+};
