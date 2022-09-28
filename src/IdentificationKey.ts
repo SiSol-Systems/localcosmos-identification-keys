@@ -1,4 +1,4 @@
-import { MatrixFilter, MatrixFilterClassMap } from "./MatrixFilter";
+import {MatrixFilter, MatrixFilterClassMap, RangeFilter} from "./MatrixFilter";
 import { TaxonReference } from "./Taxon";
 import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
 
@@ -79,6 +79,11 @@ export class IdentificationKey {
           matrixFilter.allowMultipleValues,
           this,
       )
+
+      if (matrixFilter.type === 'RangeFilter') {
+        (filter as RangeFilter).setEncodedSpace((matrixFilter as any).encodedSpace)
+      }
+
       matrixFilter.space?.forEach(space => {
         filter.createSpace(space)
       })

@@ -1,7 +1,5 @@
 import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
-import { MatrixItem } from "./MatrixItem";
 import { IdentificationKey, IdentificationKeyReference } from "./IdentificationKey";
-import {ref} from "../../.nuxt/imports";
 
 export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
 
@@ -12,8 +10,6 @@ interface MatrixFilterRestriction {
 
 export class MatrixFilter {
   public space: MatrixFilterSpace[] = []
-  matrixItems: Record<string, MatrixItem>
-  activeMatrixItems: Record<string, MatrixItem>
 
   constructor(
     public uuid: string,
@@ -27,8 +23,6 @@ export class MatrixFilter {
     public allowMultipleValues: boolean = false,
     public identificationKey: IdentificationKey,
   ) {
-    this.matrixItems = {};
-    this.activeMatrixItems = {};
   }
 
   /**
@@ -68,10 +62,14 @@ export class MatrixFilter {
    * @param identificationKey
    */
   isIdentificationKeyVisible(space: MatrixFilterSpace, identificationKey: IdentificationKeyReference): boolean {
-    const spaceReference = identificationKey.space[this.uuid]?.find((spaceRef: MatrixFilterSpaceReference) => {
-      return spaceRef.spaceIdentifier === space.spaceIdentifier
+    const spaceReferences = identificationKey.space[this.uuid]?.filter((spaceRef: MatrixFilterSpaceReference) => {
+      // Space-Identifiers have the format of <filter-uuid>:<space-id>. For most filters we can match this fully
+      // and compare their encoded space. Unfortunately this does not work for RangeFilters because their <space-id>
+      // is encoding a range of allowed values. This means we only filter out spaces for the same filter here and let
+      // the filter decide on its own how to handle further comparisons:
+      return spaceRef.spaceIdentifier.split(':')[0] === space.spaceIdentifier.split(':')[0]
     })
-    return !!spaceReference && this.spaceMatchesReference(space, spaceReference)
+    return spaceReferences.every(ref => this.spaceMatchesReference(space, ref))
   }
 
   /**
@@ -106,14 +104,67 @@ export class MatrixFilter {
 
 export class DescriptiveTextAndImagesFilter extends MatrixFilter {}
 export class ColorFilter extends MatrixFilter {
+  /**
+   * in the case of color filters the encoded space is an array of numbers describing the color as rgba,
+   * so we compare elementwise
+   *
+   * @param space
+   * @param reference
+   */
   spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
-    // in the case of color filters the encoded space is an array of numbers describing the color as rgba,
-    // so we compare elementwise:
     return space.spaceIdentifier === reference.spaceIdentifier &&
         space.encodedSpace.every((color: number, i: number) => color === reference.encodedSpace[i])
   }
 }
-export class RangeFilter extends MatrixFilter {}
+export class RangeFilter extends MatrixFilter {
+  public encodedSpace: number[] = []
+  private currentValue: { min: number, max: number } | null = null
+  private currentSpace: MatrixFilterSpace | null = null
+
+  setEncodedSpace(encodedSpace: number[]): void {
+    this.encodedSpace = encodedSpace
+  }
+
+  /**
+   * because RangeFilter has no spaces as a list we pass the selected space as a dynamic version.
+   *
+   * @param range
+   */
+  selectSpace(range: { min: number, max: number }) {
+    if (this.currentValue?.min === range.min && this.currentValue?.max === range.max) {
+      return
+    }
+
+    const hash = btoa(`[${range.min},${range.max}]`)
+    const space = new MatrixFilterSpace(
+        `${this.uuid}:${hash}`,
+        [range.min, range.max],
+        null,
+        null,
+        this,
+    )
+
+    if (this.currentSpace) {
+      this.onDeselectSpace(this.currentSpace)
+    }
+    this.onSelectSpace(space)
+    this.currentSpace = space
+    this.currentValue = range
+  }
+
+  /**
+   * Range filters are a little strange. They encode the space they want to match inside the encodedSpace and inside
+   * the spaceIdentifier. This means we cant relly on the ID here for comparison. E.g. a filter with range [1, 10], and
+   * a selected space of [2, 5] should match references with a space of [1, 4] or [4, 8] but not for [6, 8].
+   *
+   * @param space
+   * @param reference
+   */
+  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
+    return (space.encodedSpace[1] >= reference.encodedSpace[0]) &&
+        (space.encodedSpace[0] <= reference.encodedSpace[1])
+  }
+}
 export class NumberFilter extends MatrixFilter {}
 export class TextOnlyFilter extends MatrixFilter {}
 export class TaxonFilter extends MatrixFilter {}
