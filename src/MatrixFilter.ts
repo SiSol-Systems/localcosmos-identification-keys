@@ -4,12 +4,14 @@ import { IdentificationKey, IdentificationKeyReference } from "./IdentificationK
 export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
 
 interface MatrixFilterRestriction {
+  spaceIdentifier: string
   encodedSpace: string
-  spaceId: string
 }
 
 export class MatrixFilter {
   public space: MatrixFilterSpace[] = []
+  public position: number = 1
+  public items: IdentificationKeyReference[] = []
 
   constructor(
     public uuid: string,
@@ -23,6 +25,7 @@ export class MatrixFilter {
     public allowMultipleValues: boolean = false,
     public identificationKey: IdentificationKey,
   ) {
+    this.items = identificationKey?.children?.filter(child => child.space[this.uuid])
   }
 
   /**
@@ -55,6 +58,10 @@ export class MatrixFilter {
     })
   }
 
+  onItemsChanged (): void {
+    this.space.forEach(space => space.onItemsChanged())
+  }
+
   /**
    * Returns true if the given space matches a given item reference
    *
@@ -62,14 +69,26 @@ export class MatrixFilter {
    * @param identificationKey
    */
   isIdentificationKeyVisible(space: MatrixFilterSpace, identificationKey: IdentificationKeyReference): boolean {
+    const spaceId = space.spaceIdentifier.split(':')[0]
     const spaceReferences = identificationKey.space[this.uuid]?.filter((spaceRef: MatrixFilterSpaceReference) => {
       // Space-Identifiers have the format of <filter-uuid>:<space-id>. For most filters we can match this fully
       // and compare their encoded space. Unfortunately this does not work for RangeFilters because their <space-id>
       // is encoding a range of allowed values. This means we only filter out spaces for the same filter here and let
       // the filter decide on its own how to handle further comparisons:
-      return spaceRef.spaceIdentifier.split(':')[0] === space.spaceIdentifier.split(':')[0]
+      return spaceRef.spaceIdentifier.split(':')[0] === spaceId
     })
     return spaceReferences.every(ref => this.spaceMatchesReference(space, ref))
+  }
+
+  /**
+   * Returns true if the given space matches the given filter
+   *
+   * @param space
+   * @param filter
+   */
+  isMatrixFilterVisible(space: MatrixFilterSpace, filter: MatrixFilter) {
+    const spaceId = space.spaceIdentifier.split(':')[0]
+    return !!filter.restrictions[spaceId] && this.spaceMatchesReference(space, filter.restrictions[spaceId])
   }
 
   /**
@@ -79,7 +98,7 @@ export class MatrixFilter {
    * @param space
    * @param reference
    */
-  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
+  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference | MatrixFilterRestriction): boolean {
     return space.spaceIdentifier === reference.spaceIdentifier &&
         space.encodedSpace === reference.encodedSpace;
   }

@@ -1,4 +1,5 @@
 import { MatrixFilter } from "./MatrixFilter";
+import {IdentificationKeyReference} from "./IdentificationKey";
 
 export interface MatrixFilterSpaceReference {
   spaceIdentifier: string
@@ -6,8 +7,9 @@ export interface MatrixFilterSpaceReference {
 }
 
 export class MatrixFilterSpace {
-  isSelected: boolean
-  isPossible: boolean
+  public isSelected: boolean
+  public isPossible: boolean
+  public items: IdentificationKeyReference[] = []
 
   constructor(
       public spaceIdentifier: string,
@@ -18,6 +20,9 @@ export class MatrixFilterSpace {
   ) {
     this.isSelected = false;
     this.isPossible = true;
+    this.items = matrixFilter?.items?.filter(ref => {
+      return ref.space[this.matrixFilter.uuid]?.find(space => space.spaceIdentifier === this.spaceIdentifier)
+    })
   }
 
   /**
@@ -45,12 +50,10 @@ export class MatrixFilterSpace {
    *
    * @param otherSpace
    */
-  onOtherSpaceSelected (otherSpace: MatrixFilterSpace): void {
+  onOtherSpaceSelected(otherSpace: MatrixFilterSpace): void {
     if (!this.matrixFilter.allowMultipleValues) {
       this.isSelected = false;
     }
-    // todo: is this correct?
-    this.isPossible = false
   }
 
   /**
@@ -58,8 +61,10 @@ export class MatrixFilterSpace {
    *
    * @param otherSpace
    */
-  onOtherSpaceDeselected (otherSpace: MatrixFilterSpace): void {
-    this.isPossible = true
+  onOtherSpaceDeselected(otherSpace: MatrixFilterSpace): void {}
+
+  onItemsChanged () {
+    this.isPossible = !this.items.every(item => !item.isVisible)
   }
 }
 

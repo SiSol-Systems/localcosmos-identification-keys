@@ -3,52 +3,28 @@ import { TaxonReference } from "./Taxon";
 import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
 
 export enum IdentificationEvents {
-  matrixFilterUpdate = "matrixFilterUpdate",
-  matrixFilterBecameVisible = "matrixFilterBecameVisible",
-  matrixFilterBecameInvisible = "matrixFilterBecameInvisible",
-  spaceBecameImpossible = "spaceBecameImpossible",
-  spaceBecamePossible = "spaceBecamePossible",
-  matrixItemUpdate = "matrixItemUpdate",
-  matrixItem100percent = "matrixItem100percent",
-  childrenUpdated = 'childrenUpdated'
+  childrenUpdated = 'childrenUpdated',
+  filterUpdated = 'filterUpdated'
 }
 
-interface IdentificationEventCallback {
-  (eventType: string): void;
-}
-
-export enum IdentificationModes {
-  ranking = "ranking",
-  exclustionCriterion = "exclusionCriterion"
-}
-
-export interface IdentificationKeyReference {
-  uuid: string
-  nodeType: 'node' | 'result' // todo: any more?
-  imageUrl: string
-  space: Record<string, MatrixFilterSpaceReference[]>,
-  maxPoints: number
-  isVisible: boolean
-  name: string
-  decisionRule: string
-  taxon: TaxonReference | null
-  factSheets: any[] // todo: missing type info
-  slug: string
-}
-
-export interface IdentificationSettings {
-  mode: IdentificationModes,
-  done: IdentificationEventCallback,
-  pointsUpdate: IdentificationEventCallback,
-  matrixFilterBecameVisible: IdentificationEventCallback,
-  matrixFilterBecameInvisible: IdentificationEventCallback,
-  valueBecameImpossible: IdentificationEventCallback,
-  valueBecamePossible: IdentificationEventCallback
+export class IdentificationKeyReference {
+  constructor(
+      public uuid: string,
+      public nodeType: 'node' | 'result',
+      public imageUrl: string,
+      public space: Record<string, MatrixFilterSpaceReference[]>,
+      public maxPoints: number,
+      public isVisible: boolean,
+      public name: string,
+      public decisionRule: string,
+      public taxon: TaxonReference | null,
+      public factSheets: any[], // todo: missing type info
+      public slug: string,
+  ) {}
 }
 
 export class IdentificationKey {
   public matrixFilters: Record<string, MatrixFilter> = {}
-  public filteredChildren: IdentificationKeyReference[] = []
   public selectedFilterSpaces: { [filterUuid: string]: MatrixFilterSpace } = {}
 
   private listeners: Record<string, Function[]> = {}
@@ -80,17 +56,20 @@ export class IdentificationKey {
           this,
       )
 
+      if (matrixFilter.position) {
+        filter.position = matrixFilter.position
+      }
+
       if (matrixFilter.type === 'RangeFilter') {
         (filter as RangeFilter).setEncodedSpace((matrixFilter as any).encodedSpace)
       }
 
-      matrixFilter.space?.forEach(space => {
-        filter.createSpace(space)
+      matrixFilter.space?.forEach(spaceDef => {
+        filter.createSpace(spaceDef)
       })
 
       this.matrixFilters[matrixFilterUuid] = filter;
     }
-    this.calculateFilteredChildren();
   }
 
   /**
@@ -137,35 +116,67 @@ export class IdentificationKey {
    */
   onSelectSpace(filter: MatrixFilter, space: MatrixFilterSpace): void {
     this.selectedFilterSpaces[filter.uuid] = space
-    this.calculateFilteredChildren()
+    this.calculateUpdates()
   }
 
   /**
    * This method is automatically called when a space of one of this IdentificationKeys MatrixFilters is deselected.
    * It can also be called manually.
    */
-  onDeselectSpace(filter: MatrixFilter, space: MatrixFilterSpace): void {
+  onDeselectSpace(filter: MatrixFilter, _space: MatrixFilterSpace): void {
     delete this.selectedFilterSpaces[filter.uuid]
-    this.calculateFilteredChildren()
+    this.calculateUpdates()
+  }
+
+  calculateUpdates(): void {
+    this.calculateFilteredChildren();
+    this.calculateFilteredMatrixFilters();
   }
 
   /**
-   * Updates `filteredChildren` by iterating over all selected filters and removing items that don't match selected filters
+   * Sets the visibility of all children based on which filter spaces are selected
    * @private
    */
   private calculateFilteredChildren() {
-    this.filteredChildren = this.children;
-    Object.entries(this.selectedFilterSpaces).forEach(([filterId, space]) => {
-      this.filteredChildren = this.filteredChildren.filter(child => {
+    this.children.forEach(child => {
+      child.isVisible = true
+      for (const filterId in this.selectedFilterSpaces) {
         // check if the filter has a space encoded for this item:
         if (filterId in child.space) {
-          return this.matrixFilters[filterId].isIdentificationKeyVisible(space, child)
+          if (!this.matrixFilters[filterId].isIdentificationKeyVisible(this.selectedFilterSpaces[filterId], child)) {
+            child.isVisible = false
+            break
+          }
         }
-
-        // keep children where this filter does not apply
-        return true
-      })
+      }
     })
-    this.notifyListeners(IdentificationEvents.childrenUpdated, this.filteredChildren)
+
+    this.notifyListeners(IdentificationEvents.childrenUpdated, this.children)
+  }
+
+  /**
+   * Sets the visibility of all filters based on which filter spaces are selected
+   * @private
+   */
+  private calculateFilteredMatrixFilters(): void {
+    Object.values(this.matrixFilters).forEach(filter => {
+      filter.isVisible = true
+      for (const filterId in this.selectedFilterSpaces) {
+        // check if the filter has a space encoded for this item:
+        if (filterId in filter.space) {
+          if (!this.matrixFilters[filterId].isMatrixFilterVisible(this.selectedFilterSpaces[filterId], filter)) {
+            filter.isVisible = false
+            break
+          }
+        }
+      }
+
+      filter.onItemsChanged()
+    })
+    this.notifyListeners(IdentificationEvents.filterUpdated, this.matrixFilters)
+  }
+
+  get visibleChildren(): IdentificationKeyReference[] {
+    return Object.values(this.children).filter(child => child.isVisible);
   }
 }
