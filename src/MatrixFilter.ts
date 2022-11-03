@@ -1,7 +1,6 @@
 import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
 import { MatrixItem } from "./MatrixItem";
 import { IdentificationKey, IdentificationKeyReference } from "./IdentificationKey";
-import {ref} from "../../.nuxt/imports";
 
 export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
 

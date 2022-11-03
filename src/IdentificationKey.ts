@@ -1,6 +1,6 @@
 import { MatrixFilter, MatrixFilterClassMap } from "./MatrixFilter";
 import { TaxonReference } from "./Taxon";
-import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
+import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
 
 export enum IdentificationEvents {
   matrixFilterUpdate = "matrixFilterUpdate",
@@ -10,21 +10,26 @@ export enum IdentificationEvents {
   spaceBecamePossible = "spaceBecamePossible",
   matrixItemUpdate = "matrixItemUpdate",
   matrixItem100percent = "matrixItem100percent",
-  childrenUpdated = 'childrenUpdated'
+  childrenUpdated = "childrenUpdated",
 }
 
 interface IdentificationEventCallback {
   (eventType: string): void;
 }
 
+export enum NodeTypes {
+  node = "node",
+  result = "result",
+}
+
 export enum IdentificationModes {
-  ranking = "ranking",
-  exclustionCriterion = "exclusionCriterion"
+  fluid = "fluid",
+  strict = "strict",
 }
 
 export interface IdentificationKeyReference {
   uuid: string
-  nodeType: 'node' | 'result' // todo: any more?
+  nodeType: NodeTypes
   imageUrl: string
   space: Record<string, MatrixFilterSpaceReference[]>,
   maxPoints: number
@@ -47,7 +52,9 @@ export interface IdentificationSettings {
 }
 
 export class IdentificationKey {
+
   public matrixFilters: Record<string, MatrixFilter> = {}
+
   public filteredChildren: IdentificationKeyReference[] = []
   public selectedFilterSpaces: { [filterUuid: string]: MatrixFilterSpace } = {}
 
@@ -57,7 +64,7 @@ export class IdentificationKey {
     public name: string,
     public taxon: TaxonReference | null,
     public children: IdentificationKeyReference[],
-    public identificationMode: 'fluid' | 'strict',
+    public identificationMode: IdentificationModes,
     public childrenCount: number,
     public factSheets: any[], // todo: missing type info
     public slug: string,
@@ -79,7 +86,7 @@ export class IdentificationKey {
           matrixFilter.allowMultipleValues,
           this,
       )
-      matrixFilter.space?.forEach(space => {
+      matrixFilter.space?.forEach((space: MatrixFilterSpaceReference) => {
         filter.createSpace(space)
       })
 
