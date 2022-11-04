@@ -1,11 +1,13 @@
 import {IdentificationKey} from "./IdentificationKey";
 
+export enum LocalCosmosModules {
+    TaxonProfiles = "TaxonProfiles",
+    FactSheets = "FactSheets",
+}
+
 export interface ResultAction {
-    id: number
-    uuid: string
-    model: string // todo: missing type info
-    action: string // todo: missing type info
-    appLabel: string
+    feature: LocalCosmosModules,
+    uuid: string,
 }
 
 export interface NatureGuideOptions {

@@ -1,10 +1,18 @@
 import {MatrixFilter, MatrixFilterClassMap, RangeFilter} from "./MatrixFilter";
 import { TaxonReference } from "./Taxon";
-import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
+import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
 
 export enum IdentificationEvents {
   childrenUpdated = 'childrenUpdated',
-  filterUpdated = 'filterUpdated'
+  filterUpdated = 'filterUpdated',
+  matrixFilterUpdate = "matrixFilterUpdate",
+  matrixFilterBecameVisible = "matrixFilterBecameVisible",
+  matrixFilterBecameInvisible = "matrixFilterBecameInvisible",
+  spaceBecameImpossible = "spaceBecameImpossible",
+  spaceBecamePossible = "spaceBecamePossible",
+  matrixItemUpdate = "matrixItemUpdate",
+  matrixItem100percent = "matrixItem100percent",
+  childrenUpdated = "childrenUpdated",
 }
 
 export class IdentificationKeyReference {
@@ -21,10 +29,43 @@ export class IdentificationKeyReference {
       public factSheets: any[], // todo: missing type info
       public slug: string,
   ) {}
+  
+}
+
+interface IdentificationEventCallback {
+  (eventType: string): void;
+}
+
+export enum NodeTypes {
+  node = "node",
+  result = "result",
+}
+
+export enum IdentificationModes {
+  fluid = "fluid",
+  strict = "strict",
+}
+
+export interface IdentificationKeyReference {
+  uuid: string
+  nodeType: NodeTypes
+  imageUrl: string
+  space: Record<string, MatrixFilterSpaceReference[]>,
+  maxPoints: number
+  isVisible: boolean
+  name: string
+  decisionRule: string
+  taxon: TaxonReference | null
+  factSheets: any[] // todo: missing type info
+  slug: string
 }
 
 export class IdentificationKey {
+
   public matrixFilters: Record<string, MatrixFilter> = {}
+
+  public filteredChildren: IdentificationKeyReference[] = []
+
   public selectedFilterSpaces: { [filterUuid: string]: MatrixFilterSpace } = {}
 
   private listeners: Record<string, Function[]> = {}
@@ -33,7 +74,7 @@ export class IdentificationKey {
     public name: string,
     public taxon: TaxonReference | null,
     public children: IdentificationKeyReference[],
-    public identificationMode: 'fluid' | 'strict',
+    public identificationMode: IdentificationModes,
     public childrenCount: number,
     public factSheets: any[], // todo: missing type info
     public slug: string,
@@ -64,8 +105,8 @@ export class IdentificationKey {
         (filter as RangeFilter).setEncodedSpace((matrixFilter as any).encodedSpace)
       }
 
-      matrixFilter.space?.forEach(spaceDef => {
-        filter.createSpace(spaceDef)
+      matrixFilter.space?.forEach((space: MatrixFilterSpaceReference) => {
+        filter.createSpace(space)
       })
 
       this.matrixFilters[matrixFilterUuid] = filter;
