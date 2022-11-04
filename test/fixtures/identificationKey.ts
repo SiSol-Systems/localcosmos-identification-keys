@@ -53,6 +53,7 @@ export default () => {
         "allow_multiple_values": false
       },
       "weight": 5,
+      "position": 1,
       "restrictions": {},
       "isRestricted": false,
       "allowMultipleValues": false,

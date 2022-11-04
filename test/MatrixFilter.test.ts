@@ -1,9 +1,11 @@
 import {describe, beforeEach, test, expect, jest} from "@jest/globals";
 
-import { IdentificationKey } from "./../src/IdentificationKey";
-import {MatrixFilter, ColorFilter, MatrixFilterType} from "./../src/MatrixFilter";
-import { MatrixFilterSpace, MatrixFilterSpaceReference, ColorFilterSpace } from "./../src/MatrixFilterSpace";
+import {IdentificationKey} from "./../src/IdentificationKey";
+import {MatrixFilter, ColorFilter, RangeFilter} from "./../src/MatrixFilter";
+import {MatrixFilterSpace, MatrixFilterSpaceReference, ColorFilterSpace} from "./../src/MatrixFilterSpace";
 import IdentificationKeyFixture from "./fixtures/identificationKey";
+
+global.btoa = (s) => s
 
 describe('MatrixFilter', () => {
     let identificationKey: IdentificationKey,
@@ -66,19 +68,19 @@ describe('MatrixFilter', () => {
     describe('spaceMatchesReference', () => {
         test('returns true if identifier and space match', () => {
             const space = new MatrixFilterSpace('id', '<p>test</p>', null, null, filter)
-            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'id', encodedSpace: '<p>test</p>' }
+            const reference: MatrixFilterSpaceReference = {spaceIdentifier: 'id', encodedSpace: '<p>test</p>'}
             expect(filter.spaceMatchesReference(space, reference)).toEqual(true)
         })
 
         test('returns false if identifier does not match', () => {
             const space = new MatrixFilterSpace('id', '<p>test</p>', null, null, filter)
-            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'other-id', encodedSpace: '<p>test</p>' }
+            const reference: MatrixFilterSpaceReference = {spaceIdentifier: 'other-id', encodedSpace: '<p>test</p>'}
             expect(filter.spaceMatchesReference(space, reference)).toEqual(false)
         })
 
         test('returns false if encoded space does not match', () => {
             const space = new MatrixFilterSpace('id', '<p>test</p>', null, null, filter)
-            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'id', encodedSpace: '<p>no test</p>' }
+            const reference: MatrixFilterSpaceReference = {spaceIdentifier: 'id', encodedSpace: '<p>no test</p>'}
             expect(filter.spaceMatchesReference(space, reference)).toEqual(false)
         })
     })
@@ -120,20 +122,110 @@ describe('ColorFilter', () => {
     describe('spaceMatchesReference', () => {
         test('returns true if identifier and space match', () => {
             const space = new ColorFilterSpace('id', [0, 0, 0, 1], null, null, filter)
-            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'id', encodedSpace: [0, 0, 0, 1] }
+            const reference: MatrixFilterSpaceReference = {spaceIdentifier: 'id', encodedSpace: [0, 0, 0, 1]}
             expect(filter.spaceMatchesReference(space, reference)).toEqual(true)
         })
 
         test('returns false if identifier does not match', () => {
             const space = new MatrixFilterSpace('id', [0, 0, 0, 1], null, null, filter)
-            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'other-id', encodedSpace: [0, 0, 0, 1] }
+            const reference: MatrixFilterSpaceReference = {spaceIdentifier: 'other-id', encodedSpace: [0, 0, 0, 1]}
             expect(filter.spaceMatchesReference(space, reference)).toEqual(false)
         })
 
         test('returns false if encoded space does not match', () => {
             const space = new MatrixFilterSpace('id', [0, 0, 0, 1], null, null, filter)
-            const reference: MatrixFilterSpaceReference = { spaceIdentifier: 'id', encodedSpace: [255, 255, 255, 1] }
+            const reference: MatrixFilterSpaceReference = {spaceIdentifier: 'id', encodedSpace: [255, 255, 255, 1]}
             expect(filter.spaceMatchesReference(space, reference)).toEqual(false)
+        })
+    })
+})
+
+describe('RangeFilter', () => {
+    let identificationKey: IdentificationKey,
+        filter: RangeFilter;
+
+    beforeEach(() => {
+        identificationKey = {} as IdentificationKey
+        filter = new RangeFilter(
+            'filter-id',
+            'ColorFilter',
+            'Fellfarbe',
+            null,
+            true,
+            false,
+            1,
+            {},
+            false,
+            identificationKey,
+        )
+    })
+
+    test('setEncodedSpace', () => {
+        filter.setEncodedSpace([0, 10])
+        expect(filter.encodedSpace).toEqual([0, 10])
+    })
+
+    describe('selectSpace', () => {
+        beforeEach(() => {
+            filter.onSelectSpace = jest.fn()
+            filter.onDeselectSpace = jest.fn()
+        })
+
+        test('does not call parent callback when value is not changed', () => {
+            // @ts-ignore
+            filter.currentValue = { min: 1, max: 5 }
+            filter.selectSpace({ min: 1, max: 5 })
+            expect(filter.onSelectSpace).not.toHaveBeenCalled()
+            expect(filter.onDeselectSpace).not.toHaveBeenCalled()
+        })
+
+        test('calls parent callback when range changed', () => {
+            filter.selectSpace({ min: 1, max: 5 })
+            expect(filter.onSelectSpace).toHaveBeenCalled()
+            expect(filter.onDeselectSpace).not.toHaveBeenCalled()
+        })
+
+        test('calls parent deselection callback when previous range was selected', () => {
+            const prevSpace = { spaceIdentifier: 'asd' }
+            // @ts-ignore
+            filter.currentSpace = prevSpace
+            filter.selectSpace({ min: 1, max: 5 })
+            expect(filter.onSelectSpace).toHaveBeenCalled()
+            expect(filter.onDeselectSpace).toHaveBeenCalledWith(prevSpace)
+        })
+    })
+
+    describe('spaceMatchesReference', () => {
+        const space = new MatrixFilterSpace(
+            'id:space-id',
+            [2, 7],
+            null,
+            null,
+            filter,
+        )
+
+        const validRanges = [
+            [0, 3], // max is inside
+            [2, 4], // both values inside
+            [6, 9], // min is inside
+            [0, 9], // both outside but range spans over filter space
+        ]
+        validRanges.forEach(range => {
+            test(`returns true if filter space includes item space range ${range}`, () => {
+                const ref = {spaceIdentifier: 'id:space-id', encodedSpace: range}
+                expect(filter.spaceMatchesReference(space, ref)).toEqual(true)
+            })
+        })
+
+        const invalidRanges = [
+            [0, 1], // left outside
+            [8, 9], // right outside
+        ]
+        invalidRanges.forEach(range => {
+            test(`returns false if filter space does not include item space range ${range}`, () => {
+                const ref = {spaceIdentifier: 'id:space-id', encodedSpace: range}
+                expect(filter.spaceMatchesReference(space, ref)).toEqual(false)
+            })
         })
     })
 })

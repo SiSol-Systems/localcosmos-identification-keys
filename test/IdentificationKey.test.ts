@@ -12,7 +12,7 @@ describe('IdentificationKey', () => {
 
     test('calculates filtered children after construction', () => {
         expect(identificationKey.children.length).toEqual(2)
-        expect(identificationKey.filteredChildren.length).toEqual(identificationKey.children.length)
+        expect(identificationKey.visibleChildren.length).toEqual(identificationKey.children.length)
     })
 
     test('calls listeners registered to an event', () => {
@@ -26,7 +26,7 @@ describe('IdentificationKey', () => {
     test('does not call listener of a different event', () => {
         const callback = jest.fn()
         identificationKey.on(IdentificationEvents.childrenUpdated, callback)
-        identificationKey.notifyListeners(IdentificationEvents.matrixItemUpdate)
+        identificationKey.notifyListeners(IdentificationEvents.filterUpdated)
         expect(callback).not.toHaveBeenCalled()
     })
 
@@ -44,9 +44,9 @@ describe('IdentificationKey', () => {
 
         const filter = identificationKey.matrixFilters['ee604429-7236-4be6-8ab5-31b9ca62d5cd']
         identificationKey.onSelectSpace(filter, filter.space[0])
-        expect(identificationKey.filteredChildren.length).toEqual(1)
+        expect(identificationKey.visibleChildren.length).toEqual(1)
         expect(callback).toHaveBeenCalledTimes(1)
-        expect(callback).toHaveBeenCalledWith(IdentificationEvents.childrenUpdated, identificationKey, identificationKey.filteredChildren)
+        expect(callback).toHaveBeenCalledWith(IdentificationEvents.childrenUpdated, identificationKey, identificationKey.children)
     })
 
     test('notifies listeners on space deselection', () => {
@@ -56,8 +56,8 @@ describe('IdentificationKey', () => {
         const filter = identificationKey.matrixFilters['ee604429-7236-4be6-8ab5-31b9ca62d5cd']
         identificationKey.onSelectSpace(filter, filter.space[0])
         identificationKey.onDeselectSpace(filter, filter.space[0])
-        expect(identificationKey.filteredChildren.length).toEqual(2)
+        expect(identificationKey.visibleChildren.length).toEqual(2)
         expect(callback).toHaveBeenCalledTimes(2)
-        expect(callback).toHaveBeenLastCalledWith(IdentificationEvents.childrenUpdated, identificationKey, identificationKey.filteredChildren)
+        expect(callback).toHaveBeenLastCalledWith(IdentificationEvents.childrenUpdated, identificationKey, identificationKey.children)
     })
 })
