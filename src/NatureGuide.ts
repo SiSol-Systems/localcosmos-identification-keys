@@ -38,6 +38,7 @@ export class NatureGuide {
                 tree[key].childrenCount,
                 tree[key].factSheets,
                 tree[key].slug,
+                tree[key].overviewImage,
                 tree[key].matrixFilters,
             )
         }

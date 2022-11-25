@@ -78,6 +78,7 @@ export class IdentificationKey {
     public childrenCount: number,
     public factSheets: any[], // todo: missing type info
     public slug: string,
+    public overviewImage: string,
     matrixFilters: Record<string, MatrixFilter>,
   ) {
 
