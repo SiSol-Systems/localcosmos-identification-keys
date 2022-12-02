@@ -1,4 +1,5 @@
 import {IdentificationKey} from "../../src";
+import {IdentificationModes} from "../../src/IdentificationKey";
 
 export default () => {
   const children = [
@@ -41,6 +42,32 @@ export default () => {
       "taxon": null,
       "factSheets": [],
       "slug": "41-flusskrebse-krabben"
+    },
+    {
+      "uuid": "fffffffff-6bd5-4e3d-92d4-d741eb80bfe8",
+      "nodeType": "node",
+      "imageUrl": "localcosmos/user_content/content_images/image-86-500.webp",
+      "space": {
+        "ee604429-7236-4be6-8ab5-31b9ca62d5cd": [
+          {
+            "spaceIdentifier": "ee604429-7236-4be6-8ab5-31b9ca62d5cd:103",
+            "encodedSpace": "<p>erstes Beinpaar ohne großen Scheren</p>"
+          }
+        ],
+        "fffffffff-7236-4be6-8ab5-31b9ca62d5cd": [
+          {
+            "spaceIdentifier": "fffffffff-7236-4be6-8ab5-31b9ca62d5cd:001",
+            "encodedSpace": "<p>hat flügel</p>",
+          }
+        ]
+      },
+      "maxPoints": 5,
+      "isVisible": true,
+      "name": "Fliegende Krebse",
+      "decisionRule": "",
+      "taxon": null,
+      "factSheets": [],
+      "slug": "41-flusskrebse-krabben"
     }
   ]
   const filters =  {
@@ -71,6 +98,28 @@ export default () => {
           "secondaryImageUrl": null
         }
       ]
+    },
+    "fffffffff-7236-4be6-8ab5-31b9ca62d5cd": {
+      "uuid": "fffffffff-7236-4be6-8ab5-31b9ca62d5cd",
+      "name": "Flügel",
+      "type": "DescriptiveTextAndImagesFilter",
+      "description": null,
+      "definition": {
+        "allow_multiple_values": false
+      },
+      "weight": 5,
+      "position": 1,
+      "restrictions": {},
+      "isRestricted": false,
+      "allowMultipleValues": false,
+      "space": [
+        {
+          "spaceIdentifier": "fffffffff-7236-4be6-8ab5-31b9ca62d5cd:001",
+          "encodedSpace": "<p>hat flügel</p>",
+          "imageUrl": "localcosmos/user_content/content_images/image-33-500.webp",
+          "secondaryImageUrl": null
+        }
+      ]
     }
   }
 
@@ -79,10 +128,11 @@ export default () => {
       'Garnelen & Kleinkrebse',
       null,
       children as any,
-      'fluid',
+      IdentificationModes.fluid,
       2,
       [],
       'garnelen-etc',
+      'localcosmos/user_content/content_images/image-85-500.webp',
       filters as any,
   )
 }

@@ -1,5 +1,4 @@
-import { MatrixFilter } from "./MatrixFilter";
-import {IdentificationKeyReference} from "./IdentificationKey";
+import {IdentificationKey} from "./IdentificationKey";
 
 export interface MatrixFilterSpaceReference {
   spaceIdentifier: string
@@ -7,64 +6,26 @@ export interface MatrixFilterSpaceReference {
 }
 
 export class MatrixFilterSpace {
-  public isSelected: boolean
-  public isPossible: boolean
-  public items: IdentificationKeyReference[] = []
+  public spaceIdentifier: string = ''
+  public encodedSpace: any = null
 
   constructor(
-      public spaceIdentifier: string,
-      public encodedSpace: any,
-      public imageUrl: string | null,
-      public secondaryImageUrl: string | null,
-      public matrixFilter: MatrixFilter,
+    initializer: MatrixFilterSpace | MatrixFilterSpaceReference,
+    public identificationKey: IdentificationKey,
+    public index: number
   ) {
-    this.isSelected = false;
-    this.isPossible = true;
-    this.items = matrixFilter?.items?.filter(ref => {
-      return ref.space[this.matrixFilter.uuid]?.find(space => space.spaceIdentifier === this.spaceIdentifier)
-    })
-  }
-
-  /**
-   * The user selects a certain MatrixFilterSpace in the frontend.
-   */
-  select(): void {
-    if (this.isPossible) {
-      this.isSelected = true;
-      this.matrixFilter.onSelectSpace(this);
+    Object.assign(this, initializer)
+    if (!initializer.spaceIdentifier) {
+      throw new Error('SpaceIdentifier is required');
     }
   }
 
-  /**
-   * The user deselects a certain MatrixFilterSpace in the frontend.
-   */
-  deselect(): void {
-    if (this.isSelected) {
-      this.isSelected = false;
-      this.matrixFilter.onDeselectSpace(this);
-    }
+  get isSelected(): boolean {
+    return this.identificationKey.selectedSpaces[this.index] === 1;
   }
 
-  /**
-   * Event triggered once another space within the same MatrixFilter is selected
-   *
-   * @param otherSpace
-   */
-  onOtherSpaceSelected(otherSpace: MatrixFilterSpace): void {
-    if (!this.matrixFilter.allowMultipleValues) {
-      this.isSelected = false;
-    }
-  }
-
-  /**
-   * Event triggered once another space within the same MatrixFilter is deselected
-   *
-   * @param otherSpace
-   */
-  onOtherSpaceDeselected(otherSpace: MatrixFilterSpace): void {}
-
-  onItemsChanged () {
-    this.isPossible = !this.items.every(item => !item.isVisible)
+  get isPossible(): boolean {
+    return this.identificationKey.possibleSpaces[this.index] === 1;
   }
 }
 

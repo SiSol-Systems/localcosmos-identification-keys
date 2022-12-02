@@ -36,23 +36,18 @@ let selectedSpaces: number[] = [1, 1, 0];
 
 // = spaceNodeMapping[i] * selectedSpaces[i]
 const  selectedSpaceMatrix: number[][] = [
-  [0, 0, 1],
-  [0, 1, 1],
-  [0, 0, 0],
+  [  0,  0, 1],
+  [  0,  1, 1],
+  [  0,  0, 0],
 ];
 
-// 1 if column contains at least one 1, otherwise 0
-const possibleNodes = [0, 0, 1]; // todo: wie bekomme ich das hier hin? -1, 0, 1
-// 1 if row contains at least one 1, otherwise 0
-const possibleSpaces = [1, 1, 0];
+// 1 if column only 1s, 0 otherwise
+const impossibleNodes = [1, 1, 0];
+// 0 if row contains at least one 1, 1 otherwise
+const impossibleSpaces = [0, 0, 1];
 
 const computePossibleValues = function () {
-  for (let i = 0; i < spaces.length; i++) {
-    possibleSpaces[i] = selectedSpaceMatrix[i].find(v => v === 1) ? 1 : 0;
-  }
-  for (let i = 0; i < nodes.length; i++) {
-    possibleNodes[i] = selectedSpaceMatrix.map((row, index) => row[i]).find(v => v === 1) ? 1 : 0;
-  }
+  impossibleNodes = []
 }
 
 /***
@@ -64,6 +59,8 @@ const selectSpace = function (index) {
   // by definition only column `index` could've changed during this update.
   // because we are selecting a space we simply copy the values from the spaceNodeMapping over
   selectedSpaceMatrix[index] = spaceNodeMapping[index];
+  
+  /* for points:
   for (let i = 0; i < nodes.length; i++) {
     // let the space decide if it matches a given node and let it return 1 or 0
     // matchesNode is currently named `spaceMatchesReference`
@@ -73,17 +70,20 @@ const selectSpace = function (index) {
       nodes[i].points += spaces[index].points;
     }
   }
+  */
   computePossibleValues();
 }
 
 const deselectSpace = function (index) {
   selectedSpaces[index] = 0;
   selectedSpaceMatrix[index] = (new Array(nodes.length)).fill(0);
+  /* for points:
   for (let i = 0; i < nodes.length; i++) {
     if (spaces[index].matchesNode(nodes[i])) {
       nodes[i].points -= spaces[index].points;
     }
   }
+  */
   computePossibleValues();
 }
 ```

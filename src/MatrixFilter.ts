@@ -11,7 +11,6 @@ interface MatrixFilterRestriction {
 export class MatrixFilter {
   public space: MatrixFilterSpace[] = []
   public position: number = 1
-  public items: IdentificationKeyReference[] = []
 
   constructor(
     public uuid: string,
@@ -25,41 +24,6 @@ export class MatrixFilter {
     public allowMultipleValues: boolean = false,
     public identificationKey: IdentificationKey,
   ) {
-    this.items = identificationKey?.children?.filter(child => child.space[this.uuid])
-  }
-
-  /**
-   * Triggered by a space once it is selected or can be manually called.
-   *
-   * This will inform other spaces in this Filter as well as the IdentificationKey for this filter
-   * @param space
-   */
-  onSelectSpace (space: MatrixFilterSpace): void {
-    this.identificationKey.onSelectSpace(this, space)
-    this.space.forEach((ownSpace: MatrixFilterSpace) => {
-      if (space.spaceIdentifier !== ownSpace.spaceIdentifier) {
-        ownSpace.onOtherSpaceSelected(space)
-      }
-    })
-  }
-
-  /**
-   * Triggered by a space once it is deselected or can be manually called.
-   *
-   * This will inform other spaces in this Filter as well as the IdentificationKey for this filter
-   * @param space
-   */
-  onDeselectSpace (space: MatrixFilterSpace): void {
-    this.identificationKey.onDeselectSpace(this, space)
-    this.space.forEach((ownSpace: MatrixFilterSpace) => {
-      if (space.spaceIdentifier !== ownSpace.spaceIdentifier) {
-        ownSpace.onOtherSpaceDeselected(space)
-      }
-    })
-  }
-
-  onItemsChanged (): void {
-    this.space.forEach(space => space.onItemsChanged())
   }
 
   /**
@@ -102,23 +66,6 @@ export class MatrixFilter {
     return space.spaceIdentifier === reference.spaceIdentifier &&
         space.encodedSpace === reference.encodedSpace;
   }
-
-  /**
-   * todo: add type definition
-   * @param spaceDefinition
-   */
-  createSpace(spaceDefinition: any): MatrixFilterSpace {
-    const space = new MatrixFilterSpace(
-        spaceDefinition.spaceIdentifier,
-        spaceDefinition.encodedSpace,
-        spaceDefinition.imageUrl,
-        spaceDefinition.secondaryImageUrl,
-        this
-    )
-    this.space.push(space)
-
-    return space
-  }
 }
 
 export class DescriptiveTextAndImagesFilter extends MatrixFilter {}
@@ -137,38 +84,9 @@ export class ColorFilter extends MatrixFilter {
 }
 export class RangeFilter extends MatrixFilter {
   public encodedSpace: number[] = []
-  private currentValue: { min: number, max: number } | null = null
-  private currentSpace: MatrixFilterSpace | null = null
 
   setEncodedSpace(encodedSpace: number[]): void {
     this.encodedSpace = encodedSpace
-  }
-
-  /**
-   * because RangeFilter has no spaces as a list we pass the selected space as a dynamic version.
-   *
-   * @param range
-   */
-  selectSpace(range: { min: number, max: number }) {
-    if (this.currentValue?.min === range.min && this.currentValue?.max === range.max) {
-      return
-    }
-
-    const hash = btoa(`[${range.min},${range.max}]`)
-    const space = new MatrixFilterSpace(
-        `${this.uuid}:${hash}`,
-        [range.min, range.max],
-        null,
-        null,
-        this,
-    )
-
-    if (this.currentSpace) {
-      this.onDeselectSpace(this.currentSpace)
-    }
-    this.onSelectSpace(space)
-    this.currentSpace = space
-    this.currentValue = range
   }
 
   /**
