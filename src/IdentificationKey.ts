@@ -43,6 +43,8 @@ export class IdentificationKey {
   public possibleNodes: number[];
   public possibleSpaces: number[];
 
+  public points: Record<string, number> = {};
+
   public matrixFilters: Record<string, MatrixFilter> = {}
   private listeners: Record<string, Function[]> = {}
 
@@ -83,7 +85,7 @@ export class IdentificationKey {
 
       matrixFilter.space?.forEach((space: MatrixFilterSpaceReference) => {
         const initializedSpace = this.createSpace(space, this.spaces.length)
-        filter.space.push(initializedSpace)
+        filter.addSpace(initializedSpace)
         this.spaces.push(initializedSpace)
       })
 
@@ -104,6 +106,19 @@ export class IdentificationKey {
     this.selectedSpaces = (new Array(this.spaces.length)).fill(0);
     this.possibleNodes = (new Array(children.length)).fill(1)
     this.possibleSpaces = (new Array(this.spaces.length)).fill(1)
+  }
+
+  get results(): IdentificationKeyReference[] {
+    switch (this.identificationMode) {
+      case IdentificationModes.strict:
+        return this.children.filter((_, index) => this.possibleNodes[index] === 1)
+      case IdentificationModes.fluid:
+        return this.children.sort((a, b) => {
+          return ((this.points[b.uuid] || 0) / b.maxPoints) - ((this.points[a.uuid] || 0) / a.maxPoints)
+        })
+      default:
+        return []
+    }
   }
 
   /**
@@ -155,6 +170,15 @@ export class IdentificationKey {
         return a || (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.possibleNodes[nodeIndex] === 1)
       }, false) ? 1 : 0
     })
+
+    if (this.identificationMode === IdentificationModes.fluid) {
+      this.children.forEach(node => {
+        const nodeIndex = this.children.findIndex(n => n.uuid === node.uuid)
+        this.points[node.uuid] = this.spaces.reduce((a, b, spaceIndex) => {
+          return a + (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.selectedSpaces[spaceIndex] === 1 ? this.spaces[spaceIndex].points : 0)
+        }, 0)
+      })
+    }
   }
 
   createSpace(spaceDefinition: MatrixFilterSpaceReference, index: number): MatrixFilterSpace {
@@ -170,15 +194,8 @@ export class IdentificationKey {
       return
     }
     this.selectedSpaces[index] = 1;
-    this.notifyListeners(IdentificationEvents.spaceSelected, this.spaces[index]);
-    /* for points:
-    for (let i = 0; i < nodes.length; i++) {
-      if (spaces[index].matchesNode(nodes[i])) {
-        nodes[i].points += spaces[index].points;
-      }
-    }
-    */
     this.computePossibleValues();
+    this.notifyListeners(IdentificationEvents.spaceSelected, this.spaces[index]);
   }
 
   public deselectSpace (index: number) {
@@ -186,15 +203,8 @@ export class IdentificationKey {
       return
     }
     this.selectedSpaces[index] = 0;
-    this.notifyListeners(IdentificationEvents.spaceDeselected, this.spaces[index]);
-    /* for points:
-    for (let i = 0; i < nodes.length; i++) {
-      if (spaces[index].matchesNode(nodes[i])) {
-        nodes[i].points -= spaces[index].points;
-      }
-    }
-    */
     this.computePossibleValues();
+    this.notifyListeners(IdentificationEvents.spaceDeselected, this.spaces[index]);
   }
 
   public findSpaceIndex (space: MatrixFilterSpace) {

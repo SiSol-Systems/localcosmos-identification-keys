@@ -1,5 +1,5 @@
 import {beforeEach, describe, expect, jest, test} from '@jest/globals';
-import {IdentificationEvents, IdentificationKey} from "../../models/src/IdentificationKey";
+import {IdentificationEvents, IdentificationKey, IdentificationModes} from "../../models/src/IdentificationKey";
 import IdentificationKeyFixture from './fixtures/identificationKey';
 
 describe('IdentificationKey', () => {
@@ -96,5 +96,29 @@ describe('IdentificationKey', () => {
     key.selectSpace(0);
     key.selectSpace(1);
     expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  describe('fluid mode', () => {
+    beforeEach(() => {
+      key.identificationMode = IdentificationModes.fluid;
+    })
+
+    test('selecting a space in fluid mode updates its points', () => {
+      key.selectSpace(0);
+      expect(key.points[key.children[0].uuid]).toEqual(5);
+    })
+
+    test('deselecting a space removes points from it', () => {
+      key.selectSpace(0);
+      key.deselectSpace(0);
+      expect(key.points[key.children[0].uuid]).toEqual(0);
+    })
+
+    test('selecting two spaces sums their points', () => {
+      key.selectSpace(0);
+      key.selectSpace(2);
+      expect(key.points[key.children[0].uuid]).toEqual(5);
+      expect(key.points[key.children[2].uuid]).toEqual(15);
+    })
   });
 })

@@ -107,7 +107,7 @@ export default () => {
       "definition": {
         "allow_multiple_values": false
       },
-      "weight": 5,
+      "weight": 10,
       "position": 1,
       "restrictions": {},
       "isRestricted": false,

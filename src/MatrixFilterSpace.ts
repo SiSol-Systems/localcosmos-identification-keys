@@ -1,4 +1,5 @@
 import {IdentificationKey} from "./IdentificationKey";
+import {MatrixFilter} from "./MatrixFilter";
 
 export interface MatrixFilterSpaceReference {
   spaceIdentifier: string
@@ -8,6 +9,8 @@ export interface MatrixFilterSpaceReference {
 export class MatrixFilterSpace {
   public spaceIdentifier: string = ''
   public encodedSpace: any = null
+
+  public filter: MatrixFilter | null = null;
 
   constructor(
     initializer: MatrixFilterSpace | MatrixFilterSpaceReference,
@@ -26,6 +29,11 @@ export class MatrixFilterSpace {
 
   get isPossible(): boolean {
     return this.identificationKey.possibleSpaces[this.index] === 1;
+  }
+
+  get points (): number {
+    // todo: custom space weight might be added later
+    return this.filter?.weight || 0
   }
 }
 

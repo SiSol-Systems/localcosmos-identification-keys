@@ -26,6 +26,11 @@ export class MatrixFilter {
   ) {
   }
 
+  addSpace(space: MatrixFilterSpace) {
+    space.filter = this
+    this.space.push(space)
+  }
+
   /**
    * Returns true if the given space matches a given item reference
    *
