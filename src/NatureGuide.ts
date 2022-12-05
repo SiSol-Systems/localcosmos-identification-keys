@@ -15,8 +15,6 @@ export interface NatureGuideOptions {
 }
 
 export class NatureGuide {
-    public tree: { [uuid: string]: IdentificationKey } = {}
-
     constructor(
         public uuid: string,
         public version: number,
@@ -27,24 +25,25 @@ export class NatureGuide {
         public startNodeUuid: string,
         public isMulticontent: boolean,
         public slugs: Record<string, string>,
-        tree: { [uuid: string]: IdentificationKey },
-    ) {
-        for (const key in tree) {
-            this.tree[key] = new IdentificationKey(
-                tree[key].name,
-                tree[key].taxon,
-                tree[key].children,
-                tree[key].identificationMode,
-                tree[key].childrenCount,
-                tree[key].factSheets,
-                tree[key].slug,
-                tree[key].overviewImage,
-                tree[key].matrixFilters,
-            )
-        }
-    }
+        public tree: { [uuid: string]: IdentificationKey },
+    ) {}
 
     getIdentificationKey (nodeId: string ): IdentificationKey {
-        return this.tree[nodeId] || null
+        if (this.tree[nodeId]) {
+            const node = this.tree[nodeId];
+            return new IdentificationKey(
+              node.name,
+              node.taxon,
+              node.children,
+              node.identificationMode,
+              node.childrenCount,
+              node.factSheets,
+              node.slug,
+              node.overviewImage,
+              node.matrixFilters,
+            )
+        }
+    
+        return null;
     }
 }
