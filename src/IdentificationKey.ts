@@ -3,12 +3,14 @@ import {TaxonReference} from "./Taxon";
 import {MatrixFilter, MatrixFilterClassMap, RangeFilter} from "./MatrixFilter";
 
 export enum IdentificationEvents {
+  spaceInitialized = 'spaceInitialized',
+  beforeSpaceSelected = 'beforeSpaceSelected',
   spaceSelected = 'spaceSelected',
   spaceDeselected = 'spaceDeselected',
 }
 
 interface IdentificationEventCallback {
-  (eventType: string): void;
+  (eventType: string, identificationKey: IdentificationKey, ...payload: any): void;
 }
 
 export enum NodeTypes {
@@ -72,15 +74,12 @@ export class IdentificationKey {
         matrixFilter.weight,
         matrixFilter.restrictions,
         matrixFilter.allowMultipleValues,
+        matrixFilter.definition || {},
         this,
       )
 
       if (matrixFilter.position) {
         filter.position = matrixFilter.position
-      }
-
-      if (matrixFilter.type === 'RangeFilter') {
-        (filter as RangeFilter).setEncodedSpace((matrixFilter as any).encodedSpace)
       }
 
       matrixFilter.space?.forEach((space: MatrixFilterSpaceReference) => {
@@ -106,6 +105,10 @@ export class IdentificationKey {
     this.selectedSpaces = (new Array(this.spaces.length)).fill(0);
     this.possibleNodes = (new Array(children.length)).fill(1)
     this.possibleSpaces = (new Array(this.spaces.length)).fill(1)
+
+    this.spaces.forEach((_, index) => {
+      this.notifyListeners(IdentificationEvents.spaceInitialized, index)
+    })
   }
 
   get results(): IdentificationKeyReference[] {
@@ -187,24 +190,27 @@ export class IdentificationKey {
 
   /***
    * Select Space:
-   * To select a space we flip the value in `selectedSpaces` to 1 and compute the follow up matrices
+   * To select a space we flip the value in `selectedSpaces` to 1 and compute the follow-up matrices
    */
-  public selectSpace (index: number) {
+  public selectSpace (index: number, encodedSpace: any = null) {
+    this.notifyListeners(IdentificationEvents.beforeSpaceSelected, { index, encodedSpace });
+
     if (this.selectedSpaces[index] === 1 || this.possibleSpaces[index] === 0) {
       return
     }
+
     this.selectedSpaces[index] = 1;
     this.computePossibleValues();
-    this.notifyListeners(IdentificationEvents.spaceSelected, this.spaces[index]);
+    this.notifyListeners(IdentificationEvents.spaceSelected, { index, encodedSpace });
   }
 
-  public deselectSpace (index: number) {
+  public deselectSpace (index: number, encodedSpace: any = null) {
     if (this.selectedSpaces[index] === 0) {
       return
     }
     this.selectedSpaces[index] = 0;
     this.computePossibleValues();
-    this.notifyListeners(IdentificationEvents.spaceDeselected, this.spaces[index]);
+    this.notifyListeners(IdentificationEvents.spaceDeselected, { index, encodedSpace });
   }
 
   public findSpaceIndex (space: MatrixFilterSpace) {

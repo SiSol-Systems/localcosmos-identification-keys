@@ -33,6 +33,15 @@ export default () => {
             "spaceIdentifier": "ee604429-7236-4be6-8ab5-31b9ca62d5cd:102",
             "encodedSpace": "<p>erstes Beinpaar mit großen Scheren</p>"
           }
+        ],
+        "5856fbeb-613e-4af6-8c54-0557e5792c50": [
+          {
+            "spaceIdentifier": "5856fbeb-613e-4af6-8c54-0557e5792c50:WzEuMCw1LjBd",
+            "encodedSpace": [
+              1.0,
+              5.0
+            ]
+          }
         ]
       },
       "maxPoints": 5,
@@ -59,7 +68,16 @@ export default () => {
             "spaceIdentifier": "fffffffff-7236-4be6-8ab5-31b9ca62d5cd:001",
             "encodedSpace": "<p>hat flügel</p>",
           }
-        ]
+        ],
+        "5856fbeb-613e-4af6-8c54-0557e5792c50": [
+          {
+            "spaceIdentifier": "5856fbeb-613e-4af6-8c54-0557e5792c50:WzEuMCwxMS4wXQ==",
+            "encodedSpace": [
+              1.0,
+              11.0
+            ]
+          }
+        ],
       },
       "maxPoints": 5,
       "isVisible": true,
@@ -96,7 +114,7 @@ export default () => {
           "encodedSpace": "<p>erstes Beinpaar mit großen Scheren</p>",
           "imageUrl": "localcosmos/user_content/content_images/image-34-500.webp",
           "secondaryImageUrl": null
-        }
+        },
       ]
     },
     "fffffffff-7236-4be6-8ab5-31b9ca62d5cd": {
@@ -120,7 +138,34 @@ export default () => {
           "secondaryImageUrl": null
         }
       ]
-    }
+    },
+    "5856fbeb-613e-4af6-8c54-0557e5792c50": {
+      "uuid": "5856fbeb-613e-4af6-8c54-0557e5792c50",
+      "name": "Körperlänge",
+      "type": "RangeFilter",
+      "position": 4,
+      "description": null,
+      "weight": 5,
+      "restrictions": {},
+      "isRestricted": false,
+      "allowMultipleValues": false,
+      "space": [
+        {
+          "encodedSpace": [
+            1.0,
+            15.0
+          ],
+          "spaceIdentifier": "5856fbeb-613e-4af6-8c54-0557e5792c50:WzEuMCwxNS4wXQ=="
+        }
+      ],
+      "definition": {
+        "min": null,
+        "max": null,
+        "step": 1.0,
+        "unit": "cm",
+        "unit_verbose": ""
+      }
+    },
   }
 
 
