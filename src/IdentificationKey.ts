@@ -1,14 +1,23 @@
-import { IdentificationTreeNode } from "./IdentificationTreeNode";
-import { MatrixFilter, MatrixFilterClassMap, RangeFilter } from "./MatrixFilter";
-import { TaxonReference } from "./Taxon";
-import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
+import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
+import {TaxonReference} from "./Taxon";
+import {MatrixFilter, MatrixFilterClassMap, RangeFilter} from "./MatrixFilter";
 
 // one event should cover one MatrixItem
 // one event should cover one MatrixFilter
 export enum IdentificationEvents {
-  childrenUpdated = "childrenUpdated",
-  filterUpdated = "filterUpdated",
+  spaceInitialized = 'spaceInitialized',
+  beforeSpaceSelected = 'beforeSpaceSelected',
+  spaceSelected = 'spaceSelected',
+  spaceDeselected = 'spaceDeselected',
 }
+
+interface IdentificationEventCallback {
+  (eventType: string, identificationKey: IdentificationKey, ...payload: any): void;
+}
+
+export enum NodeTypes {
+  node = "node",
+  result = "result",
 
 export enum IdentificationModes {
   fluid = "fluid",
@@ -23,14 +32,16 @@ interface IdentificationEventCallback {
  * The identification key (matrix) on one level of the identification tree
  */
 export class IdentificationKey {
+  public spaceNodeMapping: number[][];
+  public selectedSpaces: number[];
+
+  public spaces: MatrixFilterSpace[] = [];
+  public possibleNodes: number[];
+  public possibleSpaces: number[];
+
+  public points: Record<string, number> = {};
 
   public matrixFilters: Record<string, MatrixFilter> = {}
-
-  //public filteredChildren: IdentificationTreeNode[] = []
-
-  // more than one space of a MatrixFilter can be selected at the same time, if Matrixfilter.allowMultipleValues == true
-  public selectedFilterSpaces: { [spaceIdentifier: string]: MatrixFilterSpace } = {}
-
   private listeners: Record<string, Function[]> = {}
 
   constructor(
@@ -41,11 +52,11 @@ export class IdentificationKey {
     public childrenCount: number,
     public factSheets: any[], // todo: missing type info
     public slug: string,
+    public overviewImage: string,
     matrixFilters: Record<string, MatrixFilter>,
   ) {
-
     for (const matrixFilterUuid in matrixFilters) {
-      const matrixFilter = matrixFilters[matrixFilterUuid];
+      const matrixFilter = matrixFilters[matrixFilterUuid]
       const matrixFilterClass = MatrixFilterClassMap[matrixFilter.type];
       const filter = new matrixFilterClass(
         matrixFilter.uuid,
@@ -57,6 +68,7 @@ export class IdentificationKey {
         matrixFilter.weight,
         matrixFilter.restrictions,
         matrixFilter.allowMultipleValues,
+        matrixFilter.definition || {},
         this,
       )
 
@@ -64,15 +76,45 @@ export class IdentificationKey {
         filter.position = matrixFilter.position;
       }
 
-      if (matrixFilter.type === 'RangeFilter') {
-        (filter as RangeFilter).setEncodedSpace((matrixFilter as any).encodedSpace);
-      }
-
       matrixFilter.space?.forEach((space: MatrixFilterSpaceReference) => {
-        filter.createSpace(space);
+        const initializedSpace = this.createSpace(space, this.spaces.length)
+        filter.addSpace(initializedSpace)
+        this.spaces.push(initializedSpace)
       })
 
-      this.matrixFilters[matrixFilterUuid] = filter;
+      this.matrixFilters[filter.uuid] = filter;
+    }
+
+    this.spaceNodeMapping = this.spaces.map(space => {
+      return (new Array(children.length).fill(0)).map((_, nodeIndex) => {
+        const splits = space.spaceIdentifier.split(':', 1)
+        const filter = children[nodeIndex].space[splits[0]]
+        if (filter) {
+          return filter.find(reference => reference.spaceIdentifier === space.spaceIdentifier) ? 1 : 0
+        }
+
+        return 0
+      })
+    });
+    this.selectedSpaces = (new Array(this.spaces.length)).fill(0);
+    this.possibleNodes = (new Array(children.length)).fill(1)
+    this.possibleSpaces = (new Array(this.spaces.length)).fill(1)
+
+    this.spaces.forEach((_, index) => {
+      this.notifyListeners(IdentificationEvents.spaceInitialized, index)
+    })
+  }
+
+  get results(): IdentificationKeyReference[] {
+    switch (this.identificationMode) {
+      case IdentificationModes.strict:
+        return this.children.filter((_, index) => this.possibleNodes[index] === 1)
+      case IdentificationModes.fluid:
+        return this.children.sort((a, b) => {
+          return ((this.points[b.uuid] || 0) / b.maxPoints) - ((this.points[a.uuid] || 0) / a.maxPoints)
+        })
+      default:
+        return []
     }
   }
 
@@ -114,88 +156,59 @@ export class IdentificationKey {
     })
   }
 
-  /**
-   * This method is automatically called when a space of one of this IdentificationKeys MatrixFilters is selected.
-   * It can also be called manually.
-   */
-  onSelectSpace(space: MatrixFilterSpace): void {
-
-    // add space to this.selectedFilterSpaces if it is not yet present
-    this.selectedFilterSpaces[space.spaceIdentifier] = space;
-
-    this.calculateUpdates();
-  }
-
-  /**
-   * This method is automatically called when a space of one of this IdentificationKeys MatrixFilters is deselected.
-   * It can also be called manually.
-   */
-  onDeselectSpace(space: MatrixFilterSpace): void {
-    delete this.selectedFilterSpaces[space.spaceIdentifier];
-    this.calculateUpdates();
-  }
-
-  calculateUpdates(): void {
-    this.calculateFilteredChildren();
-    this.calculateFilteredMatrixFilters();
-  }
-
-  /**
-   * Propagates selection of spaces to treeNodes, which then decide if they are possible or not
-   * @private
-   */
-  private calculateFilteredChildren() {
-    this.children.forEach(treeNode => {
-      Object.entries(this.selectedFilterSpaces).forEach(([spaceIdentifier, selectedSpace]) => {
-
-        if (spaceIdentifier in treeNode.space) {
-          treeNode.onSelectMatchingSpace(selectedSpace);
-        }
-        else {
-          treeNode.onSelectMismatchingSpace(selectedSpace);
-        }
-      });
+  public computePossibleValues () {
+    this.possibleNodes = this.children.map((_, nodeIndex) => {
+      return this.spaces.reduce((a, b, spaceIndex) => {
+        return a && (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.selectedSpaces[spaceIndex] === 1 || this.selectedSpaces[spaceIndex] === 0)
+      }, true) ? 1 : 0
+    })
+    this.possibleSpaces = this.spaces.map((_, spaceIndex) => {
+      return this.selectedSpaces[spaceIndex] === 1 || this.children.reduce((a, b, nodeIndex) => {
+        return a || (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.possibleNodes[nodeIndex] === 1)
+      }, false) ? 1 : 0
     })
 
-    this.notifyListeners(IdentificationEvents.childrenUpdated, this.children)
+    if (this.identificationMode === IdentificationModes.fluid) {
+      this.children.forEach(node => {
+        const nodeIndex = this.children.findIndex(n => n.uuid === node.uuid)
+        this.points[node.uuid] = this.spaces.reduce((a, b, spaceIndex) => {
+          return a + (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.selectedSpaces[spaceIndex] === 1 ? this.spaces[spaceIndex].points : 0)
+        }, 0)
+      })
+    }
   }
 
-  /**
-   * Sets the possibility of all filter spaces based on which filter spaces are selected
-   * AND based on which treeNodes are still possible
-   * @private
+  createSpace(spaceDefinition: MatrixFilterSpaceReference, index: number): MatrixFilterSpace {
+    return new MatrixFilterSpace(spaceDefinition, this, index)
+  }
+
+  /***
+   * Select Space:
+   * To select a space we flip the value in `selectedSpaces` to 1 and compute the follow-up matrices
    */
-  private calculateFilteredMatrixFilters(): void {
-    Object.values(this.matrixFilters).forEach(filter => {
-      filter.isVisible = true;
-      for (const filterId in this.selectedFilterSpaces) {
-        // check if the filter has a space encoded for this item:
-        if (filterId in filter.space) {
-          if (!this.matrixFilters[filterId].isMatrixFilterVisible(this.selectedFilterSpaces[filterId], filter)) {
-            filter.isVisible = false;
-            break;
-          }
-        }
-      }
+  public selectSpace (index: number, encodedSpace: any = null) {
+    this.notifyListeners(IdentificationEvents.beforeSpaceSelected, { index, encodedSpace });
 
-      filter.onItemsChanged()
-    })
-    this.notifyListeners(IdentificationEvents.filterUpdated, this.matrixFilters);
+    if (this.selectedSpaces[index] === 1 || this.possibleSpaces[index] === 0) {
+      return
+    }
+
+    this.selectedSpaces[index] = 1;
+    this.computePossibleValues();
+    this.notifyListeners(IdentificationEvents.spaceSelected, { index, encodedSpace });
   }
 
-  get possibleChildren(): IdentificationTreeNode[] {
-    return Object.values(this.children).filter(treeNode => treeNode.isPossible);
+  public deselectSpace (index: number, encodedSpace: any = null) {
+    if (this.selectedSpaces[index] === 0) {
+      return
+    }
+    this.selectedSpaces[index] = 0;
+    this.computePossibleValues();
+    this.notifyListeners(IdentificationEvents.spaceDeselected, { index, encodedSpace });
   }
 
-
-  reset(): void {
-    this.children.forEach(treeNode => {
-      treeNode.reset();
-    });
-
-    Object.entries(this.matrixFilters).forEach(([filterId, matrixFilter]) => {
-      matrixFilter.reset();
-    });
+  public findSpaceIndex (space: MatrixFilterSpace) {
+    return this.spaces.findIndex(s => s.spaceIdentifier === space.spaceIdentifier)
   }
 
 }

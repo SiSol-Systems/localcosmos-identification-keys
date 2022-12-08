@@ -1,8 +1,13 @@
-import { MatrixFilterSpace, MatrixFilterSpaceReference } from "./MatrixFilterSpace";
-import { IdentificationKey } from "./IdentificationKey";
-import { IdentificationTreeNode } from "./IdentificationTreeNode";
+import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace";
+import {IdentificationEvents, IdentificationKey} from "./IdentificationKey";
 
-export type MatrixFilterType = 'DescriptiveTextAndImagesFilter' | 'TextOnlyFilter' | 'ColorFilter' | 'RangeFilter' | 'NumberFilter' | 'TaxonFilter';
+export type MatrixFilterType =
+  'DescriptiveTextAndImagesFilter'
+  | 'TextOnlyFilter'
+  | 'ColorFilter'
+  | 'RangeFilter'
+  | 'NumberFilter'
+  | 'TaxonFilter';
 
 interface MatrixFilterRestriction {
   spaceIdentifier: string
@@ -12,7 +17,6 @@ interface MatrixFilterRestriction {
 export class MatrixFilter {
   public space: MatrixFilterSpace[] = []
   public position: number = 1
-  public treeNodes: IdentificationTreeNode[] = []
 
   constructor(
     public uuid: string,
@@ -24,190 +28,85 @@ export class MatrixFilter {
     public weight: number = 1,
     public restrictions: Record<string, MatrixFilterRestriction> = {},
     public allowMultipleValues: boolean = false,
+    public definition: object = {},
     public identificationKey: IdentificationKey,
   ) {
-    this.treeNodes = identificationKey?.children?.filter(treeNode => treeNode.space[this.uuid]);
   }
 
-  /**
-   * Triggered by a space once it is selected or can be manually called.
-   *
-   * This will inform other spaces in this Filter as well as the IdentificationKey for this filter
-   * @param space
-   */
-  onSelectSpace(space: MatrixFilterSpace): void {
-
-    // deselect other spaces of this filter if MatrixFilter.allowMultipleValues == false
-    this.space.forEach((ownSpace: MatrixFilterSpace) => {
-      if (space.spaceIdentifier !== ownSpace.spaceIdentifier) {
-        ownSpace.onOtherSpaceSelected(space);
-        if (!ownSpace.isSelected) {
-          this.identificationKey.onDeselectSpace(ownSpace);
-        }
-      }
-    })
-
-    // update which treeNodes and spaces are still possible based on the current selection
-    this.identificationKey.onSelectSpace(space);
-
-  }
-
-  /**
-   * Triggered by a space once it is deselected or can be manually called.
-   *
-   * This will inform other spaces in this Filter as well as the IdentificationKey for this filter
-   * @param space
-   */
-  onDeselectSpace(space: MatrixFilterSpace): void {
-
-    this.space.forEach((ownSpace: MatrixFilterSpace) => {
-      if (space.spaceIdentifier !== ownSpace.spaceIdentifier) {
-        ownSpace.onOtherSpaceDeselected(space);
-      }
-    })
-
-    this.identificationKey.onDeselectSpace(space);
-
-  }
-
-  onItemsChanged(): void {
-    this.space.forEach(space => space.onItemsChanged());
-  }
-
-  /**
-   * Returns true if the given space matches a given item reference
-   *
-   * @param space
-   * @param identificationKey
-   */
-  isIdentificationKeyVisible(space: MatrixFilterSpace, treeNode: IdentificationTreeNode): boolean {
-    const spaceId = space.spaceIdentifier.split(':')[0];
-    const spaceReferences = treeNode.space[this.uuid]?.filter((spaceRef: MatrixFilterSpaceReference) => {
-      // Space-Identifiers have the format of <filter-uuid>:<space-id>. For most filters we can match this fully
-      // and compare their encoded space. Unfortunately this does not work for RangeFilters because their <space-id>
-      // is encoding a range of allowed values. This means we only filter out spaces for the same filter here and let
-      // the filter decide on its own how to handle further comparisons:
-      return spaceRef.spaceIdentifier.split(':')[0] === spaceId;
-    })
-    return spaceReferences.every(ref => this.spaceMatchesReference(space, ref));
-  }
-
-  /**
-   * Returns true if the given space matches the given filter
-   *
-   * @param space
-   * @param filter
-   */
-  isMatrixFilterVisible(space: MatrixFilterSpace, filter: MatrixFilter) {
-    const spaceId = space.spaceIdentifier.split(':')[0];
-    return !!filter.restrictions[spaceId] && this.spaceMatchesReference(space, filter.restrictions[spaceId]);
-  }
-
-  /**
-   * Checks if a space matches the reference in a MatrixItem.
-   * Might be overwritten in subclasses to perform different calculations.
-   *
-   * @param space
-   * @param reference
-   */
-  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference | MatrixFilterRestriction): boolean {
-    return space.spaceIdentifier === reference.spaceIdentifier &&
-      space.encodedSpace === reference.encodedSpace;
-  }
-
-  /**
-   * todo: add type definition
-   * @param spaceDefinition
-   */
-  createSpace(spaceDefinition: any): MatrixFilterSpace {
-    const space = new MatrixFilterSpace(
-      spaceDefinition.spaceIdentifier,
-      spaceDefinition.encodedSpace,
-      spaceDefinition.imageUrl,
-      spaceDefinition.secondaryImageUrl,
-      this
-    )
-    this.space.push(space);
-
-    return space;
-  }
-
-  reset(): void {
-    this.space.forEach((space) => {
-      space.reset();
-    });
+  addSpace(space: MatrixFilterSpace) {
+    space.filter = this
+    this.space.push(space)
   }
 }
 
-export class DescriptiveTextAndImagesFilter extends MatrixFilter { }
+export class DescriptiveTextAndImagesFilter extends MatrixFilter {
+}
 
 export class ColorFilter extends MatrixFilter {
-  /**
-   * in the case of color filters the encoded space is an array of numbers describing the color as rgba,
-   * so we compare elementwise
-   *
-   * @param space
-   * @param reference
-   */
-  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
-    return space.spaceIdentifier === reference.spaceIdentifier &&
-      space.encodedSpace.every((color: number, i: number) => color === reference.encodedSpace[i]);
-  }
 }
 
 export class RangeFilter extends MatrixFilter {
   public encodedSpace: number[] = []
-  private currentValue: { min: number, max: number } | null = null
-  private currentSpace: MatrixFilterSpace | null = null
-
-  setEncodedSpace(encodedSpace: number[]): void {
-    this.encodedSpace = encodedSpace;
-  }
 
   /**
-   * because RangeFilter has no spaces as a list we pass the selected space as a dynamic version.
-   *
-   * @param range
-   */
-  selectSpace(range: { min: number, max: number }) {
-    if (this.currentValue?.min === range.min && this.currentValue?.max === range.max) {
-      return;
-    }
-
-    const hash = btoa(`[${range.min},${range.max}]`);
-    const space = new MatrixFilterSpace(
-      `${this.uuid}:${hash}`,
-      [range.min, range.max],
-      null,
-      null,
-      this,
-    );
-
-    if (this.currentSpace) {
-      this.onDeselectSpace(this.currentSpace);
-    }
-    this.onSelectSpace(space);
-    this.currentSpace = space;
-    this.currentValue = range;
-  }
-
-  /**
-   * Range filters are a little strange. They encode the space they want to match inside the encodedSpace and inside
-   * the spaceIdentifier. This means we cant rely on the ID here for comparison. E.g. a filter with range [1, 10], and
-   * a selected space of [2, 5] should match references with a space of [1, 4] or [4, 8] but not for [6, 8].
+   * We clean up the space identifier to only contain the filter uuid
    *
    * @param space
-   * @param reference
    */
-  spaceMatchesReference(space: MatrixFilterSpace, reference: MatrixFilterSpaceReference): boolean {
-    return (space.encodedSpace[1] >= reference.encodedSpace[0]) &&
-      (space.encodedSpace[0] <= reference.encodedSpace[1]);
+  addSpace(space: MatrixFilterSpace) {
+    space.spaceIdentifier = space.spaceIdentifier.split(':')[0]
+
+    // register listener to update the space node mapping when the encoded space changes
+    this.identificationKey.on(IdentificationEvents.beforeSpaceSelected, this.updateEncodedSpace.bind(this))
+    this.identificationKey.on(IdentificationEvents.spaceInitialized, this.updateEncodedSpaceMapping.bind(this))
+    super.addSpace(space);
+  }
+
+  updateEncodedSpace(event: IdentificationEvents, identificationKey: IdentificationKey, payload: {}): void {
+    const { index, encodedSpace } = payload as { index: number, encodedSpace: number[] }
+    if (identificationKey.spaces[index].spaceIdentifier !== this.uuid) {
+      return
+    }
+
+    // update the internal encoded space and make sure the space becomes selectable
+    this.encodedSpace = encodedSpace
+    identificationKey.selectedSpaces[index] = 0
+    this.updateEncodedSpaceMapping(event, identificationKey, index)
+  }
+
+  private updateEncodedSpaceMapping(_: IdentificationEvents, identificationKey: IdentificationKey, index: number): void {
+    if (identificationKey.spaces[index].spaceIdentifier !== this.uuid) {
+      return
+    }
+
+    const space = this.space[0]
+    let newMapping = (new Array(identificationKey.children.length).fill(1));
+    if (this.encodedSpace.length > 0) {
+      newMapping = newMapping.map((_, nodeIndex) => {
+        const filter = identificationKey.children[nodeIndex].space[space.spaceIdentifier]
+        if (filter) {
+          return filter.find((spaceRef: MatrixFilterSpaceReference) => {
+            return (this.encodedSpace[0] >= spaceRef.encodedSpace[0]) &&
+              (this.encodedSpace[0] <= spaceRef.encodedSpace[1])
+          }) ? 1 : 0
+        }
+
+        return 0
+      })
+    }
+
+    identificationKey.spaceNodeMapping[index] = newMapping
   }
 }
 
-export class NumberFilter extends MatrixFilter { }
-export class TextOnlyFilter extends MatrixFilter { }
-export class TaxonFilter extends MatrixFilter { }
+export class NumberFilter extends MatrixFilter {
+}
+
+export class TextOnlyFilter extends MatrixFilter {
+}
+
+export class TaxonFilter extends MatrixFilter {
+}
 
 export const MatrixFilterClassMap = {
   DescriptiveTextAndImagesFilter: DescriptiveTextAndImagesFilter,
