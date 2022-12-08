@@ -23,7 +23,7 @@ export class MatrixFilter {
     public type: MatrixFilterType,
     public name: string = '',
     public description: string | null = '',
-    public isVisible: boolean = true,
+    public isVisible: boolean = true, /* the visibility is true if all restrictions are met, and false if not all restrictions are met */
     public isRestricted: boolean = false,
     public weight: number = 1,
     public restrictions: Record<string, MatrixFilterRestriction> = {},

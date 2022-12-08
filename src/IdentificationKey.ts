@@ -2,6 +2,8 @@ import {MatrixFilterSpace, MatrixFilterSpaceReference} from "./MatrixFilterSpace
 import {TaxonReference} from "./Taxon";
 import {MatrixFilter, MatrixFilterClassMap, RangeFilter} from "./MatrixFilter";
 
+// one event should cover one MatrixItem
+// one event should cover one MatrixFilter
 export enum IdentificationEvents {
   spaceInitialized = 'spaceInitialized',
   beforeSpaceSelected = 'beforeSpaceSelected',
@@ -16,27 +18,19 @@ interface IdentificationEventCallback {
 export enum NodeTypes {
   node = "node",
   result = "result",
-}
 
 export enum IdentificationModes {
   fluid = "fluid",
   strict = "strict",
 }
 
-export interface IdentificationKeyReference {
-  uuid: string
-  nodeType: NodeTypes
-  imageUrl: string
-  space: Record<string, MatrixFilterSpaceReference[]>,
-  maxPoints: number
-  isVisible: boolean
-  name: string
-  decisionRule: string
-  taxon: TaxonReference | null
-  factSheets: any[] // todo: missing type info
-  slug: string
+interface IdentificationEventCallback {
+  (eventType: string): void;
 }
 
+/**
+ * The identification key (matrix) on one level of the identification tree
+ */
 export class IdentificationKey {
   public spaceNodeMapping: number[][];
   public selectedSpaces: number[];
@@ -53,7 +47,7 @@ export class IdentificationKey {
   constructor(
     public name: string,
     public taxon: TaxonReference | null,
-    public children: IdentificationKeyReference[],
+    public children: IdentificationTreeNode[],
     public identificationMode: IdentificationModes,
     public childrenCount: number,
     public factSheets: any[], // todo: missing type info
@@ -79,7 +73,7 @@ export class IdentificationKey {
       )
 
       if (matrixFilter.position) {
-        filter.position = matrixFilter.position
+        filter.position = matrixFilter.position;
       }
 
       matrixFilter.space?.forEach((space: MatrixFilterSpaceReference) => {
@@ -132,9 +126,9 @@ export class IdentificationKey {
    */
   on(event: IdentificationEvents, callback: Function): void {
     if (!this.listeners[event]) {
-      this.listeners[event] = []
+      this.listeners[event] = [];
     }
-    this.listeners[event].push(callback)
+    this.listeners[event].push(callback);
   }
 
   /**
@@ -145,7 +139,7 @@ export class IdentificationKey {
    */
   off(event: IdentificationEvents, callback: Function): void {
     if (this.listeners[event]) {
-      this.listeners[event] = this.listeners[event].filter(f => f !== callback)
+      this.listeners[event] = this.listeners[event].filter(f => f !== callback);
     }
   }
 
@@ -158,7 +152,7 @@ export class IdentificationKey {
    */
   notifyListeners(event: IdentificationEvents, ...payload: any[]) {
     (this.listeners[event] || []).forEach(callback => {
-      callback.call(callback, event, this, ...payload)
+      callback.call(callback, event, this, ...payload);
     })
   }
 
@@ -216,4 +210,5 @@ export class IdentificationKey {
   public findSpaceIndex (space: MatrixFilterSpace) {
     return this.spaces.findIndex(s => s.spaceIdentifier === space.spaceIdentifier)
   }
+
 }

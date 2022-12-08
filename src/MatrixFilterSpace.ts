@@ -2,9 +2,14 @@ import {IdentificationKey} from "./IdentificationKey";
 import {MatrixFilter} from "./MatrixFilter";
 
 export interface MatrixFilterSpaceReference {
-  spaceIdentifier: string
-  encodedSpace: any
+  spaceIdentifier: string,
+  encodedSpace: any,
 }
+
+interface TreeNodeRegistry {
+  [treeNodeUUID: string]: IdentificationTreeNode
+}
+
 
 export class MatrixFilterSpace {
   public spaceIdentifier: string = ''
@@ -35,16 +40,17 @@ export class MatrixFilterSpace {
     // todo: custom space weight might be added later
     return this.filter?.weight || 0
   }
+
 }
 
-export class DescriptiveTextAndImagesFilterSpace extends MatrixFilterSpace {}
-export class ColorFilterSpace extends MatrixFilterSpace {}
-export class TextOnlyFilterSpace extends MatrixFilterSpace {}
-export class TaxonFilterSpace extends MatrixFilterSpace {}
+export class DescriptiveTextAndImagesFilterSpace extends MatrixFilterSpace { }
+export class ColorFilterSpace extends MatrixFilterSpace { }
+export class TextOnlyFilterSpace extends MatrixFilterSpace { }
+export class TaxonFilterSpace extends MatrixFilterSpace { }
 
 export const MatrixFilterSpaceClassMap = {
   DescriptiveTextAndImagesFilterSpace: DescriptiveTextAndImagesFilterSpace,
   ColorFilterSpace: ColorFilterSpace,
   TextOnlyFilterSpace: TextOnlyFilterSpace,
   TaxonFilterSpace: TaxonFilterSpace,
-};
+}
