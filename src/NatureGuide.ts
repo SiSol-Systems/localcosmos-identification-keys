@@ -28,7 +28,7 @@ export class NatureGuide {
         public tree: { [uuid: string]: IdentificationKey },
     ) {}
 
-    getIdentificationKey (nodeId: string ): IdentificationKey {
+    getIdentificationKey (nodeId: string ): IdentificationKey | null {
         if (this.tree[nodeId]) {
             const node = this.tree[nodeId];
             return new IdentificationKey(

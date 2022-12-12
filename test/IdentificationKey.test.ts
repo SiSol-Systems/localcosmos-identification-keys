@@ -99,6 +99,16 @@ describe('IdentificationKey', () => {
     expect(key.possibleNodes).toEqual([0, 0, 1]);
   })
 
+  test('Getting the results returns the possible nodes', () => {
+    key.selectSpace(0);
+    expect(key.results).toEqual([key.children[0], key.children[2]]);
+  })
+
+  test('Getting the impossible results returns the impossible nodes', () => {
+    key.selectSpace(0);
+    expect(key.impossibleResults).toEqual([key.children[1]]);
+  })
+
   describe('fluid mode', () => {
     beforeEach(() => {
       key.identificationMode = IdentificationModes.fluid;

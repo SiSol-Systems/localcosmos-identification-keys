@@ -106,16 +106,17 @@ export class IdentificationKey {
   }
 
   get results(): IdentificationKeyReference[] {
-    switch (this.identificationMode) {
-      case IdentificationModes.strict:
-        return this.children.filter((_, index) => this.possibleNodes[index] === 1)
-      case IdentificationModes.fluid:
-        return this.children.sort((a, b) => {
-          return ((this.points[b.uuid] || 0) / b.maxPoints) - ((this.points[a.uuid] || 0) / a.maxPoints)
-        })
-      default:
-        return []
-    }
+    return this.sortNodes(this.children.filter((_, index) => this.possibleNodes[index] === 1))
+  }
+
+  get impossibleResults(): IdentificationKeyReference[] {
+    return this.sortNodes(this.children.filter((_, index) => this.possibleNodes[index] === 0))
+  }
+
+  private sortNodes(nodes: IdentificationKeyReference[]) {
+    return nodes.sort((a, b) => {
+      return ((this.points[b.uuid] || 0) / b.maxPoints) - ((this.points[a.uuid] || 0) / a.maxPoints)
+    })
   }
 
   /**
@@ -168,14 +169,12 @@ export class IdentificationKey {
       }, false) ? 1 : 0
     })
 
-    if (this.identificationMode === IdentificationModes.fluid) {
-      this.children.forEach(node => {
-        const nodeIndex = this.children.findIndex(n => n.uuid === node.uuid)
-        this.points[node.uuid] = this.spaces.reduce((a, b, spaceIndex) => {
-          return a + (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.selectedSpaces[spaceIndex] === 1 ? this.spaces[spaceIndex].points : 0)
-        }, 0)
-      })
-    }
+    this.children.forEach(node => {
+      const nodeIndex = this.children.findIndex(n => n.uuid === node.uuid)
+      this.points[node.uuid] = this.spaces.reduce((a, b, spaceIndex) => {
+        return a + (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.selectedSpaces[spaceIndex] === 1 ? this.spaces[spaceIndex].points : 0)
+      }, 0)
+    })
   }
 
   createSpace(spaceDefinition: MatrixFilterSpaceReference, index: number): MatrixFilterSpace {

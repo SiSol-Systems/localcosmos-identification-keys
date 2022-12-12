@@ -17,6 +17,14 @@ export interface Trait {
   values: TraitValue[]
 }
 
+export interface TaxonText {
+  taxonTextType: string
+  shortText: string,
+  shortTextKey: string
+  longText: string
+  longTextKey: string
+}
+
 export interface Taxon {
   nameUuid: string,
   taxonNuid: string,
@@ -28,10 +36,10 @@ export interface Taxon {
   nodeNames: string[]
   nodeDecisionRules: any // todo: unknown
   traits: Trait[]
-  texts: any // todo: unknown
+  texts: TaxonText[],
   images: TaxonImageSet
   synonyms: string[]
-  gbifNubkey: string
+  gbifNubKey: string
 }
 
 
