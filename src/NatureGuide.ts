@@ -21,6 +21,7 @@ export class NatureGuide {
         public options: NatureGuideOptions,
         public globalOptions: any, // todo: missing type info
         public name: string,
+        public slug: string,
         public crossLinks: any, // todo: missing type info
         public startNodeUuid: string,
         public isMulticontent: boolean,
