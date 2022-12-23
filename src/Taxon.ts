@@ -40,6 +40,7 @@ export interface Taxon {
   images: TaxonImageSet
   synonyms: string[]
   gbifNubKey: string
+  // templateContents: unknown // todo: unknown
 }
 
 
@@ -50,4 +51,5 @@ export interface TaxonReference {
   taxonAuthor: string
   vernacularNames: { [locale: string]: string }
   alternativeVernacularNames: { [locale: string]: string }
+  images: TaxonImageSet
 }

@@ -39,6 +39,9 @@ export class IdentificationKey {
   public possibleNodes: number[];
   public possibleSpaces: number[];
 
+  public results: IdentificationKeyReference[] = [];
+  public impossibleResults: IdentificationKeyReference[] = [];
+
   public points: Record<string, number> = {};
 
   public matrixFilters: Record<string, MatrixFilter> = {}
@@ -100,22 +103,9 @@ export class IdentificationKey {
     this.possibleNodes = (new Array(children.length)).fill(1)
     this.possibleSpaces = (new Array(this.spaces.length)).fill(1)
 
+    this.computeResults();
     this.spaces.forEach((_, index) => {
       this.notifyListeners(IdentificationEvents.spaceInitialized, index)
-    })
-  }
-
-  get results(): IdentificationKeyReference[] {
-    return this.sortNodes(this.children.filter((_, index) => this.possibleNodes[index] === 1))
-  }
-
-  get impossibleResults(): IdentificationKeyReference[] {
-    return this.sortNodes(this.children.filter((_, index) => this.possibleNodes[index] === 0))
-  }
-
-  private sortNodes(nodes: IdentificationKeyReference[]) {
-    return nodes.sort((a, b) => {
-      return ((this.points[b.uuid] || 0) / b.maxPoints) - ((this.points[a.uuid] || 0) / a.maxPoints)
     })
   }
 
@@ -169,16 +159,29 @@ export class IdentificationKey {
       }, false) ? 1 : 0
     })
 
-    this.children.forEach(node => {
-      const nodeIndex = this.children.findIndex(n => n.uuid === node.uuid)
-      this.points[node.uuid] = this.spaces.reduce((a, b, spaceIndex) => {
-        return a + (this.spaceNodeMapping[spaceIndex][nodeIndex] === 1 && this.selectedSpaces[spaceIndex] === 1 ? this.spaces[spaceIndex].points : 0)
+    this.points = Object.fromEntries(this.children.map((node, index) => [
+      node.uuid,
+      this.spaces.reduce((a, b, spaceIndex) => {
+        return a + (this.spaceNodeMapping[spaceIndex][index] === 1 && this.selectedSpaces[spaceIndex] === 1 ? this.spaces[spaceIndex].points : 0)
       }, 0)
-    })
+    ]));
+
+    this.computeResults();
+  }
+
+  public computeResults () {
+    this.results = this.sortNodes(this.children.filter((_, index) => this.possibleNodes[index] === 1))
+    this.impossibleResults = this.sortNodes(this.children.filter((_, index) => this.possibleNodes[index] === 0))
   }
 
   createSpace(spaceDefinition: MatrixFilterSpaceReference, index: number): MatrixFilterSpace {
     return new MatrixFilterSpace(spaceDefinition, this, index)
+  }
+
+  private sortNodes(nodes: IdentificationKeyReference[]) {
+    return nodes.sort((a, b) => {
+      return ((this.points[b.uuid] || 0) / b.maxPoints) - ((this.points[a.uuid] || 0) / a.maxPoints)
+    })
   }
 
   /***
