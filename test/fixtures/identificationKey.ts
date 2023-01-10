@@ -127,7 +127,16 @@ export default () => {
       },
       "weight": 10,
       "position": 1,
-      "restrictions": {},
+      "restrictions": {
+        "ee604429-7236-4be6-8ab5-31b9ca62d5cd": [
+          {
+            "spaceIdentifier": "ee604429-7236-4be6-8ab5-31b9ca62d5cd:103",
+            "encodedSpace": "<p>erstes Beinpaar ohne großen Scheren</p>",
+            "imageUrl": "localcosmos/user_content/content_images/image-33-500.webp",
+            "secondaryImageUrl": null
+          },
+        ]
+      },
       "isRestricted": false,
       "allowMultipleValues": false,
       "space": [

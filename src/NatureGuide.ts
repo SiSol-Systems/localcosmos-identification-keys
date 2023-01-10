@@ -21,6 +21,7 @@ export class NatureGuide {
         public options: NatureGuideOptions,
         public globalOptions: any, // todo: missing type info
         public name: string,
+        public slug: string,
         public crossLinks: any, // todo: missing type info
         public startNodeUuid: string,
         public isMulticontent: boolean,
@@ -28,7 +29,7 @@ export class NatureGuide {
         public tree: { [uuid: string]: IdentificationKey },
     ) {}
 
-    getIdentificationKey (nodeId: string ): IdentificationKey {
+    getIdentificationKey (nodeId: string ): IdentificationKey | null {
         if (this.tree[nodeId]) {
             const node = this.tree[nodeId];
             return new IdentificationKey(
