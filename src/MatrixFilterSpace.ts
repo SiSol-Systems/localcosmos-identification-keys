@@ -6,11 +6,6 @@ export interface MatrixFilterSpaceReference {
   encodedSpace: any,
 }
 
-interface TreeNodeRegistry {
-  [treeNodeUUID: string]: IdentificationTreeNode
-}
-
-
 export class MatrixFilterSpace {
   public spaceIdentifier: string = ''
   public encodedSpace: any = null

@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, jest, test} from '@jest/globals';
-import {IdentificationEvents, IdentificationKey, IdentificationModes} from "../../models/src/IdentificationKey";
+import { beforeEach, describe, expect, vi, test } from 'vitest';
+import { IdentificationEvents, IdentificationKey, IdentificationModes } from "../src/IdentificationKey";
 import IdentificationKeyFixture from './fixtures/identificationKey';
 
 describe('IdentificationKey', () => {
@@ -59,12 +59,11 @@ describe('IdentificationKey', () => {
   test('selecting and deselecting a space updates the possibleSpaces', () => {
     key.selectSpace(0);
     key.deselectSpace(0);
-    console.log(key.spaceNodeMapping)
     expect(key.possibleSpaces).toEqual([1, 1, 1, 1]);
   })
 
   test('selecting a space notifies listeners', () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
     key.on(IdentificationEvents.beforeSpaceSelected, listener);
     key.on(IdentificationEvents.spaceSelected, listener);
     key.selectSpace(0);
@@ -73,7 +72,7 @@ describe('IdentificationKey', () => {
   })
 
   test('deselecting a space notifies listeners', () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
     key.on(IdentificationEvents.spaceDeselected, listener);
     key.selectSpace(0);
     key.deselectSpace(0);
@@ -81,7 +80,7 @@ describe('IdentificationKey', () => {
   })
 
   test('selecting a space that is already selected does not notify listeners', () => {
-    const listener = jest.fn();
+    const listener = vi.fn();
     key.on(IdentificationEvents.spaceSelected, listener);
     key.selectSpace(0);
     key.selectSpace(0);
@@ -107,6 +106,34 @@ describe('IdentificationKey', () => {
   test('Getting the impossible results returns the impossible nodes', () => {
     key.selectSpace(0);
     expect(key.impossibleResults).toEqual([key.children[1]]);
+  })
+
+  test('creating a new IdentificationKey fills the filterVisibilityRestrictions', () => {
+    expect(key.filterVisibilityRestrictions).toEqual([
+      [],
+      [[0]],
+      [],
+    ]);
+  })
+
+  test('a filter with restrictions to be invisible after creation', () => {
+    expect(key.visibleFilters).toEqual([1, 0, 1]);
+  })
+
+  test('selecting a space updates the possibleFilters', () => {
+    key.selectSpace(0);
+    expect(key.visibleFilters).toEqual([1, 1, 1]);
+  })
+
+  test('deselecting a space updates the possibleFilters', () => {
+    key.selectSpace(0);
+    key.deselectSpace(0);
+    expect(key.visibleFilters).toEqual([1, 0, 1]);
+  })
+
+  test('selecting a space only makes filters visible that are restricted by it', () => {
+    key.selectSpace(3, [3.0]);
+    expect(key.visibleFilters).toEqual([1, 0, 1]);
   })
 
   describe('fluid mode', () => {

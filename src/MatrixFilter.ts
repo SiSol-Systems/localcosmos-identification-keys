@@ -20,13 +20,12 @@ export class MatrixFilter {
 
   constructor(
     public uuid: string,
+    public index: number,
     public type: MatrixFilterType,
     public name: string = '',
     public description: string | null = '',
-    public isVisible: boolean = true, /* the visibility is true if all restrictions are met, and false if not all restrictions are met */
-    public isRestricted: boolean = false,
     public weight: number = 1,
-    public restrictions: Record<string, MatrixFilterRestriction> = {},
+    public restrictions: Record<string, MatrixFilterRestriction[]> = {},
     public allowMultipleValues: boolean = false,
     public definition: object = {},
     public identificationKey: IdentificationKey,
@@ -36,6 +35,10 @@ export class MatrixFilter {
   addSpace(space: MatrixFilterSpace) {
     space.filter = this
     this.space.push(space)
+  }
+
+  get isVisible(): boolean {
+    return this.identificationKey.visibleFilters[this.index] === 1;
   }
 }
 
